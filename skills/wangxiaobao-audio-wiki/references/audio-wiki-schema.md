@@ -43,9 +43,9 @@ wiki/
 ### 多项目共存怎么办
 
 一个 cwd 下可以同时存放多个项目的 wiki —— `wiki/projects/9001-成都项目甲/`
-和 `wiki/projects/9002-成都项目乙/` 并存。用户切项目时（plugin 全局
-active-project 变了，由 `xiaobao_switch_project` tool 写入
-`~/.openclaw/state/wangxiaobao/active-project.json`），sync / ingest
+和 `wiki/projects/9002-成都项目乙/` 并存。用户切项目时（CLI 全局
+active-project 变了，由 `xiaobao-cli project use` 命令 写入
+`~/.xiaobao/active-project.json`），sync / ingest
 **只动当前 project 目录**，老项目的 wiki 不受影响。
 
 ### SCHEMA.md / index.md / log.md 项目独立
@@ -112,8 +112,8 @@ file_id: "..."                           # 上游 fileId
 file_url: "..."                          # 18000 秒过期的播放链接（仅出处参考）
 
 # 多租户隔离锚
-tenant_id: "395809723556831232"          # plugin active-project.tenantId
-project_id: "434616948240678912"         # plugin active-project.projectId
+tenant_id: "395809723556831232"          # CLI active-project.tenantId
+project_id: "434616948240678912"         # CLI active-project.projectId
 
 # 时间锚（LocalDateTime 不带时区，跟上游 API 一致）
 recorded_start: "2026-05-09 10:23:11"
@@ -124,7 +124,7 @@ duration_sec:   751
 consultant_user_id: 100
 consultant_name:    张三
 
-# 说话人占比（来自 xiaobao_get_audio_text 的 talkRatios）
+# 说话人占比（来自 xiaobao-cli audio text 的 talkRatios）
 talk_ratios:
   - role: 销售
     ratio: 0.62
@@ -137,7 +137,7 @@ parent_consultant: "[[consultants/100-张三]]"   # wikilink，指向 Layer 2 �
 ---
 ```
 
-正文：把 `xiaobao_get_audio_text` 返回的 `texts[]` 按 "speaker: content"
+正文：把 `xiaobao-cli audio text` 返回的 `texts[]` 按 "speaker: content"
 逐行排好。每行可带时间戳：
 
 ```
@@ -354,7 +354,7 @@ raw/ 是 Layer 1 不可变，wikilink 只指向 Layer 2，**不被其他页指�
 
 所有路径都在当前项目目录下（`wiki/projects/{projectId}-{projectName}/`）：
 
-1. 从 plugin active-project state（`~/.openclaw/state/wangxiaobao/active-project.json`）
+1. 从 CLI active-project state（`~/.xiaobao/active-project.json`）
    读 `projectId` / `projectName` → 定位项目目录
 2. 读项目目录下 `SCHEMA.md`（拿到话题/话术/标签词表）
 3. 读项目目录下 `index.md`（拿到已存在的 entity/concept 列表）

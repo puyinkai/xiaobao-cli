@@ -8,73 +8,38 @@ metadata:
   cliHelp: "xiaobao-cli audio --help"
 ---
 
-> **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH
-> (`npm i -g @puyinkai/xiaobao-cli` 或 `npx -y @puyinkai/xiaobao-cli`)。
-> Agent 通过 shell 工具（Bash / Run / Shell）执行命令、读 **stdout JSON** 消费；
-> stderr 是进度/错误提示。退出码 0 = 成功，非 0 = 业务/网络错（错误对象同时打到 stdout 可解析）。
->
-> CLI 14 个子命令跟 openclaw-xiaobao plugin 14 个 tool **1:1 等价**，返回 JSON
-> 结构完全一致（`{status, ok, data: {...}}`）。skill 里看到的 `resp.data.data.xxx`
-> 取数路径直接对 stdout JSON 用 `jq` / `JSON.parse` 即可。
->
-> **plugin tool → CLI 命令翻译表（数组参数走逗号分隔）**：
->
-> | plugin tool | CLI 命令 |
-> | --- | --- |
-> | `xiaobao_authorize { force? }` | `xiaobao-cli auth login [--force]` |
-> | `xiaobao_whoami` | `xiaobao-cli auth whoami` |
-> | `xiaobao_logout` | `xiaobao-cli auth logout` |
-> | `xiaobao_list_projects { keyword? }` | `xiaobao-cli project list [--keyword <kw>]` |
-> | `xiaobao_switch_project { tenantId, tenantName, projectId, projectName }` | `xiaobao-cli project use --tenant-id ... --tenant-name ... --project-id ... --project-name ...` |
-> | `xiaobao_list_consultants` | `xiaobao-cli consultant list` |
-> | `xiaobao_list_audio { fromDate, toDate, userId?, userIdList?, page, size }` | `xiaobao-cli audio list --from "..." --to "..." [--user-id ...] [--user-id-list a,b,c] [--page N] [--size N]` |
-> | `xiaobao_get_audio_text { audioId }` | `xiaobao-cli audio text <audioId>` |
-> | `xiaobao_list_customers { ... }` | `xiaobao-cli customer list [--user-id] [--user-name] [--customer-name] [--customer-phone] [--portrait] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_visits { ... }` | `xiaobao-cli visit list [--customer-id] [--customer-name] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_customer_focus { visitIds, customerIds, audioIds, category, classification, fromDate, toDate, ... }` | `xiaobao-cli focus list [--visit-ids a,b] [--customer-ids a,b] [--audio-ids a,b] [--category ...] [--classification ...] [--from ...] [--to ...]` |
-> | `xiaobao_list_customer_resistance { ... }` | `xiaobao-cli resistance list [同 focus]` |
-> | `xiaobao_quick_qa { prompt, threadId? }` | `xiaobao-cli qa "<prompt>" [--thread-id ...]` |
-> | `xiaobao_api { method, path, query, body, headers }` | `xiaobao-cli api <METHOD> <PATH> [--query k=v] [--body '<json>'] [--headers k=v]` |
->
-> 用 `--format toon` 切到 TOON（uniform 数组省 30-50% token，LLM 上下文优化）；
-> 用 `--format json`（默认）保持 JSON。state 路径：`~/.xiaobao/`（fallback 读 `~/.openclaw/state/wangxiaobao/`）。
-
-
 # 旺小宝录音查询
 
 只读探查录音。**没有副作用**——不写 wiki / 不推游标，
 所以用错也没成本，鼓励放心调用。
 
-> 想要"完整入库流程"（拉全部文本 → 写 wiki/raw/audio/ → 推进游标），切到
-> `wangxiaobao-audio-wiki` skill。本 skill 跟那个的边界就是**有没有副作用**。
-
 ## 执行前必读
 
-- 必须有有效 token：先调 `xiaobao_whoami`，未登录 / 过期就调 `xiaobao_authorize`
-- **必须有激活项目**：tenant/project 由 tool 内部从
-  `~/.openclaw/state/wangxiaobao/active-project.json` 读，调用方不需要传任何
-  tenant/project 参数。如果 tool 返回 `error: 'NO_ACTIVE_PROJECT'`，
+- 必须有有效 token：先调 `xiaobao-cli auth whoami`，未登录 / 过期就调 `xiaobao-cli auth login`
+- **必须有激活项目**：tenant/project 由 命令内部从
+  `~/.xiaobao/active-project.json` 读，调用方不需要传任何
+  tenant/project 参数。如果 命令 返回 `error: 'NO_ACTIVE_PROJECT'`，
   让用户跑 `wangxiaobao-switch-project` skill 后再重试
 - **绝不要**写文件、推游标。即使用户随口说"顺便存一下"也要拦：
   那是 `wangxiaobao-audio-wiki` 的事，本 skill 一旦写盘就破坏了"只读"承诺
 - LocalDateTime 字段格式：`yyyy-MM-dd HH:mm:ss`（**空格**分隔，不带时区）。
-  pierre 框架的 Jackson 反序列化只认这个格式；带 `T` 或 `+08:00` 会被 plugin
+  pierre 框架的 Jackson 反序列化只认这个格式；带 `T` 或 `+08:00` 会被 CLI
   容错处理，但传空格形式最稳
 
 ---
 
 ## 快速索引：意图 → 工具
 
-| 用户意图               | plugin tool                | 关键参数                                  |
+| 用户意图               | 命令                | 关键参数                                  |
 | ---------------------- | -------------------------- | ----------------------------------------- |
-| 列某时段所有录音元数据 | `xiaobao_list_audio`       | `fromDate` / `toDate`                     |
-| 列某销售的录音         | `xiaobao_list_audio`       | `+ userId: <uid>`（多个销售用 `userIdList`） |
-| 反查销售 user-id       | `xiaobao_list_consultants` | 无参（拿当前用户授权范围内的所有顾问）   |
-| 看总数 / 估个量        | `xiaobao_list_audio`       | `page: 1, size: 1`，只读 `total`          |
-| 翻页继续看             | `xiaobao_list_audio`       | `page += 1`                               |
-| 看某条录音转录预览     | `xiaobao_get_audio_text`   | `audioId`（从 list_audio 结果拿）         |
+| 列某时段所有录音元数据 | `xiaobao-cli audio list`       | `fromDate` / `toDate`                     |
+| 列某销售的录音         | `xiaobao-cli audio list`       | `+ userId: <uid>`（多个销售用 `userIdList`） |
+| 反查销售 user-id       | `xiaobao-cli consultant list` | 无参（拿当前用户授权范围内的所有顾问）   |
+| 看总数 / 估个量        | `xiaobao-cli audio list`       | `page: 1, size: 1`，只读 `total`          |
+| 翻页继续看             | `xiaobao-cli audio list`       | `page += 1`                               |
+| 看某条录音转录预览     | `xiaobao-cli audio text`   | `audioId`（从 list_audio 结果拿）         |
 
-**tool 参数里没有** `tenantId` / `projectId` —— plugin 内部从激活项目状态读。
+**命令 参数里没有** `tenantId` / `projectId` —— CLI 内部从激活项目状态读。
 如果还没激活过项目，跑 `wangxiaobao-switch-project` skill 先设一次。
 
 ---
@@ -107,23 +72,23 @@ PageParam 默认 `page: 1, size: 10`，传 `page: 0` 上游会报错。读 `tota
 
 - 用户能直接给 user-id（数字）→ 用 `userId: <id>`（单个）或
   `userIdList: [<id1>, <id2>, ...]`（多个）
-- 只知道名字 → 调 **`xiaobao_list_consultants`**（无参），拿到当前用户
+- 只知道名字 → 调 **`xiaobao-cli consultant list`**（无参），拿到当前用户
   授权范围内的所有顾问（含 `userName` / `userId`），按名字 match 后取 `userId`
-  传给 `xiaobao_list_audio`
+  传给 `xiaobao-cli audio list`
 
 > 已弃用做法："先 list_audio 不带 filter，再扫 content[].saleName 反查"——
 > 这种 hack 在录音数据稀疏 / 时间窗短时找不到目标销售。**改用
-> `xiaobao_list_consultants` 反查**，精确且快。
+> `xiaobao-cli consultant list` 反查**，精确且快。
 
 ### 4. 单条文本预览：按需调，不要全量
 
-`xiaobao_get_audio_text` 一次拿一条录音的转录。**只在用户挑了具体某条之
+`xiaobao-cli audio text` 一次拿一条录音的转录。**只在用户挑了具体某条之
 后再调**，不要 list 完顺手把每条都 get_audio_text 一遍——那是 sync skill
 的事。一次会话 1-3 条样本预览足够。
 
 ### 5. 响应外层结构
 
-`xiaobao_list_audio` 和 `xiaobao_get_audio_text` 都返回 pierre 框架的
+`xiaobao-cli audio list` 和 `xiaobao-cli audio text` 都返回 pierre 框架的
 `Result<T>` 包：
 
 ```jsonc
@@ -136,7 +101,7 @@ PageParam 默认 `page: 1, size: 10`，传 `page: 0` 上游会报错。读 `tota
 
 list_audio 里 `data` 又是 `PageResult<AudioPageResp>`：
 `{ page, size, total, content[] }`，所以**取元数据数组**要写
-`resp.data.data.content`（plugin tool 不展开 envelope，原样返回）。
+`resp.data.data.content`（命令 不展开 envelope，原样返回）。
 
 ---
 
@@ -145,7 +110,7 @@ list_audio 里 `data` 又是 `PageResult<AudioPageResp>`：
 ### 场景 1：列今天所有录音
 
 ```jsonc
-// xiaobao_list_audio
+// xiaobao-cli audio list
 {
   "fromDate": "2026-05-12 00:00:00",
   "toDate":   "2026-05-12 23:59:59",
@@ -185,7 +150,7 @@ list_audio 里 `data` 又是 `PageResult<AudioPageResp>`：
 用户从场景 1 列表里挑了序号 1（audioId=12345）：
 
 ```jsonc
-// xiaobao_get_audio_text
+// xiaobao-cli audio text
 { "audioId": 12345 }
 ```
 
@@ -206,18 +171,18 @@ audioId 12345 · 张三 · 2026-05-12 10:23:11（12 分钟）
 
 用户说"张三本周打了几个"——只知道名字：
 
-1. 调 `xiaobao_list_consultants`（无参）→ 拿到 `[{ userId, userName, ... }, ...]`
+1. 调 `xiaobao-cli consultant list`（无参）→ 拿到 `[{ userId, userName, ... }, ...]`
 2. 在结果里找 `userName === "张三"` 的 `userId`
-3. 调 `xiaobao_list_audio` 带 `userId: <张三的 userId>` + 本周时间窗
+3. 调 `xiaobao-cli audio list` 带 `userId: <张三的 userId>` + 本周时间窗
 
 ```jsonc
 // step 1
-// xiaobao_list_consultants
+// xiaobao-cli consultant list
 {}
 
 // step 2 ——找到 张三 的 userId = 100
 // step 3
-// xiaobao_list_audio
+// xiaobao-cli audio list
 {
   "fromDate": "2026-05-06 00:00:00",
   "toDate":   "2026-05-13 00:00:00",
@@ -236,7 +201,7 @@ audioId 12345 · 张三 · 2026-05-12 10:23:11（12 分钟）
 
 - **`code: "400"` / `msg: "消息转换异常"`** — fromDate/toDate 格式不对。
   必须 `yyyy-MM-dd HH:mm:ss` 空格分隔，不带时区。
-- **401 / token 过期** — 调 `xiaobao_authorize { force: true }` 重登，重试一次。
+- **401 / token 过期** — 调 `xiaobao-cli auth login --force` 重登，重试一次。
 - **`total: 0`** — 时间窗口里确实没数据，或激活的租户/项目错了。
   让用户跑 `wangxiaobao-switch-project` skill 确认或重新激活项目。
 - **`error: 'NO_ACTIVE_PROJECT'`** — 还没设过激活项目。让用户跑

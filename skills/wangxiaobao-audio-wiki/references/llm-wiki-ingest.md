@@ -365,7 +365,7 @@ The wiki directory works as an Obsidian vault out of the box:
 For best results:
 - Set Obsidian's attachment folder to `raw/assets/`
 - Enable "Wikilinks" in Obsidian settings (usually on by default)
-- Install Dataview plugin for queries like `TABLE tags FROM "entities" WHERE contains(tags, "company")`
+- Install Dataview CLI for queries like `TABLE tags FROM "entities" WHERE contains(tags, "company")`
 
 If using the Obsidian skill alongside this one, set `OBSIDIAN_VAULT_PATH` to the
 same directory as the wiki path.

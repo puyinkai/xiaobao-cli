@@ -8,48 +8,16 @@ metadata:
   cliHelp: "xiaobao-cli qa --help"
 ---
 
-> **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH
-> (`npm i -g @puyinkai/xiaobao-cli` 或 `npx -y @puyinkai/xiaobao-cli`)。
-> Agent 通过 shell 工具（Bash / Run / Shell）执行命令、读 **stdout JSON** 消费；
-> stderr 是进度/错误提示。退出码 0 = 成功，非 0 = 业务/网络错（错误对象同时打到 stdout 可解析）。
->
-> CLI 14 个子命令跟 openclaw-xiaobao plugin 14 个 tool **1:1 等价**，返回 JSON
-> 结构完全一致（`{status, ok, data: {...}}`）。skill 里看到的 `resp.data.data.xxx`
-> 取数路径直接对 stdout JSON 用 `jq` / `JSON.parse` 即可。
->
-> **plugin tool → CLI 命令翻译表（数组参数走逗号分隔）**：
->
-> | plugin tool | CLI 命令 |
-> | --- | --- |
-> | `xiaobao_authorize { force? }` | `xiaobao-cli auth login [--force]` |
-> | `xiaobao_whoami` | `xiaobao-cli auth whoami` |
-> | `xiaobao_logout` | `xiaobao-cli auth logout` |
-> | `xiaobao_list_projects { keyword? }` | `xiaobao-cli project list [--keyword <kw>]` |
-> | `xiaobao_switch_project { tenantId, tenantName, projectId, projectName }` | `xiaobao-cli project use --tenant-id ... --tenant-name ... --project-id ... --project-name ...` |
-> | `xiaobao_list_consultants` | `xiaobao-cli consultant list` |
-> | `xiaobao_list_audio { fromDate, toDate, userId?, userIdList?, page, size }` | `xiaobao-cli audio list --from "..." --to "..." [--user-id ...] [--user-id-list a,b,c] [--page N] [--size N]` |
-> | `xiaobao_get_audio_text { audioId }` | `xiaobao-cli audio text <audioId>` |
-> | `xiaobao_list_customers { ... }` | `xiaobao-cli customer list [--user-id] [--user-name] [--customer-name] [--customer-phone] [--portrait] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_visits { ... }` | `xiaobao-cli visit list [--customer-id] [--customer-name] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_customer_focus { visitIds, customerIds, audioIds, category, classification, fromDate, toDate, ... }` | `xiaobao-cli focus list [--visit-ids a,b] [--customer-ids a,b] [--audio-ids a,b] [--category ...] [--classification ...] [--from ...] [--to ...]` |
-> | `xiaobao_list_customer_resistance { ... }` | `xiaobao-cli resistance list [同 focus]` |
-> | `xiaobao_quick_qa { prompt, threadId? }` | `xiaobao-cli qa "<prompt>" [--thread-id ...]` |
-> | `xiaobao_api { method, path, query, body, headers }` | `xiaobao-cli api <METHOD> <PATH> [--query k=v] [--body '<json>'] [--headers k=v]` |
->
-> 用 `--format toon` 切到 TOON（uniform 数组省 30-50% token，LLM 上下文优化）；
-> 用 `--format json`（默认）保持 JSON。state 路径：`~/.xiaobao/`（fallback 读 `~/.openclaw/state/wangxiaobao/`）。
-
-
 # 旺小宝问数
 
-调 `xiaobao_quick_qa` tool 用自然语言问当前激活项目的业务数据。
+跑 `xiaobao-cli qa` 用自然语言问当前激活项目的业务数据。
 零副作用，不写文件、不动 wiki，所以用错也没成本，鼓励放心调用。
 
 ## 执行前必读
 
-- 必须有有效 token：先调 `xiaobao_whoami`；未登录 / 过期就调 `xiaobao_authorize`
-- **必须有激活项目**：tool 内部自动从激活项目状态读 tenant/project，
-  调用方**不要传** tenant/project 参数。如果 tool 返回
+- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录 / 过期就调 `xiaobao-cli auth login`
+- **必须有激活项目**：命令内部自动从激活项目状态读 tenant/project，
+  调用方**不要传** tenant/project 参数。如果 命令 返回
   `error: 'NO_ACTIVE_PROJECT'`，让用户跑 `wangxiaobao-switch-project` skill
   后再重试
 - **绝不要**写文件。即使用户随口说"顺便存一下"也要拦——告诉用户"出长报告
@@ -59,11 +27,11 @@ metadata:
 
 ## 快速索引：意图 → 工具
 
-| 用户意图                           | plugin tool        | 关键参数                              |
+| 用户意图                           | 命令        | 关键参数                              |
 | ---------------------------------- | ------------------ | ------------------------------------- |
-| 单轮问数                           | `xiaobao_quick_qa` | `prompt`                              |
-| 接着上一轮继续追问                 | `xiaobao_quick_qa` | `prompt + threadId`                   |
-| 给问题加上下文（如客户 ID 列表）    | `xiaobao_quick_qa` | `prompt + context: {...}`             |
+| 单轮问数                           | `xiaobao-cli qa` | `prompt`                              |
+| 接着上一轮继续追问                 | `xiaobao-cli qa` | `prompt + threadId`                   |
+| 给问题加上下文（如客户 ID 列表）    | `xiaobao-cli qa` | `prompt + context: {...}`             |
 
 ---
 
@@ -71,7 +39,7 @@ metadata:
 
 ### 1. 用业务语言问，不要追问 ID
 
-用户问"张三本周成交几单"——直接把 prompt 原样传给 tool，**不要**先去查
+用户问"张三本周成交几单"——直接把 prompt 原样传给 命令，**不要**先去查
 张三的 user-id 再拼参数。后端 AI 知道"张三"在当前项目里就是谁。
 
 如果用户问的是开放性问题（"客户主要疑虑是啥"），更不要画蛇添足拼任何
@@ -87,7 +55,7 @@ ID / 时间窗口——AI 会自己定义合理范围。
 
 ### 3. 响应只取 answer 给用户
 
-`xiaobao_quick_qa` 返回结构：
+`xiaobao-cli qa` 返回结构：
 
 ```jsonc
 {
@@ -102,7 +70,7 @@ ID / 时间窗口——AI 会自己定义合理范围。
 }
 ```
 
-plugin tool 又把上面塞进 `{ status, ok, data }` 外包：拿最终文本写
+CLI 又把上面塞进 `{ status, ok, data }` 外包：拿最终文本写
 `resp.data.data.answer`，渲染给用户**只展示 answer**。
 
 如果要支持后续追问，结尾加一句"💡 想接着问可以告诉我，会沿用本次对话上下文"
@@ -111,7 +79,7 @@ plugin tool 又把上面塞进 `{ status, ok, data }` 外包：拿最终文本�
 ### 4. 不要拉太多上下文进 context
 
 `context` 字段可以塞额外背景，但**控制在 < 4KB**。需要塞大块录音 / 客户
-档案的需求暂时没有 plugin 侧支持——用户可以分多轮 prompt 喂，每轮塞一段。
+档案的需求暂时没有 CLI 侧支持——用户可以分多轮 prompt 喂，每轮塞一段。
 
 ### 5. 不要替代 audio-query 做"列录音元数据"
 
@@ -126,7 +94,7 @@ plugin tool 又把上面塞进 `{ status, ok, data }` 外包：拿最终文本�
 ### 场景 1：问客户来访
 
 ```jsonc
-// xiaobao_quick_qa
+// xiaobao-cli qa
 { "prompt": "今天到访了多少组客户，里面有几组是首访？" }
 ```
 
@@ -213,10 +181,10 @@ plugin tool 又把上面塞进 `{ status, ok, data }` 外包：拿最终文本�
 
 - **`error: 'NO_ACTIVE_PROJECT'`** — 还没设过激活项目 → 跑
   `wangxiaobao-switch-project` skill 后重试
-- **401 / token 过期** — 调 `xiaobao_authorize { force: true }` 重登，重试一次
-- **响应耗时 > 30 分钟** — 后端慢到打满 plugin timeout → 告诉用户"上游慢，稍后重试"
+- **401 / token 过期** — 调 `xiaobao-cli auth login --force` 重登，重试一次
+- **响应耗时 > 30 分钟** — 后端慢到打满 CLI timeout → 告诉用户"上游慢，稍后重试"
 - **answer 为空** — 上游这一轮没产出最终文本 → 让用户换个 prompt 重试
-- **用户想"批量出报告"** — 拦住：本期 plugin 没有报告生成 skill，
+- **用户想"批量出报告"** — 拦住：本期 CLI 没有报告生成 skill，
   解释"出长报告的功能在做异步化改造，下期发布"
 - **用户问"列录音元数据 / audioId 是多少"** — 切到
   `wangxiaobao-audio-query` skill，那个走元数据 API 更精确

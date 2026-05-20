@@ -8,65 +8,33 @@ metadata:
   cliHelp: "xiaobao-cli focus --help"
 ---
 
-> **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH
-> (`npm i -g @puyinkai/xiaobao-cli` 或 `npx -y @puyinkai/xiaobao-cli`)。
-> Agent 通过 shell 工具（Bash / Run / Shell）执行命令、读 **stdout JSON** 消费；
-> stderr 是进度/错误提示。退出码 0 = 成功，非 0 = 业务/网络错（错误对象同时打到 stdout 可解析）。
->
-> CLI 14 个子命令跟 openclaw-xiaobao plugin 14 个 tool **1:1 等价**，返回 JSON
-> 结构完全一致（`{status, ok, data: {...}}`）。skill 里看到的 `resp.data.data.xxx`
-> 取数路径直接对 stdout JSON 用 `jq` / `JSON.parse` 即可。
->
-> **plugin tool → CLI 命令翻译表（数组参数走逗号分隔）**：
->
-> | plugin tool | CLI 命令 |
-> | --- | --- |
-> | `xiaobao_authorize { force? }` | `xiaobao-cli auth login [--force]` |
-> | `xiaobao_whoami` | `xiaobao-cli auth whoami` |
-> | `xiaobao_logout` | `xiaobao-cli auth logout` |
-> | `xiaobao_list_projects { keyword? }` | `xiaobao-cli project list [--keyword <kw>]` |
-> | `xiaobao_switch_project { tenantId, tenantName, projectId, projectName }` | `xiaobao-cli project use --tenant-id ... --tenant-name ... --project-id ... --project-name ...` |
-> | `xiaobao_list_consultants` | `xiaobao-cli consultant list` |
-> | `xiaobao_list_audio { fromDate, toDate, userId?, userIdList?, page, size }` | `xiaobao-cli audio list --from "..." --to "..." [--user-id ...] [--user-id-list a,b,c] [--page N] [--size N]` |
-> | `xiaobao_get_audio_text { audioId }` | `xiaobao-cli audio text <audioId>` |
-> | `xiaobao_list_customers { ... }` | `xiaobao-cli customer list [--user-id] [--user-name] [--customer-name] [--customer-phone] [--portrait] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_visits { ... }` | `xiaobao-cli visit list [--customer-id] [--customer-name] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_customer_focus { visitIds, customerIds, audioIds, category, classification, fromDate, toDate, ... }` | `xiaobao-cli focus list [--visit-ids a,b] [--customer-ids a,b] [--audio-ids a,b] [--category ...] [--classification ...] [--from ...] [--to ...]` |
-> | `xiaobao_list_customer_resistance { ... }` | `xiaobao-cli resistance list [同 focus]` |
-> | `xiaobao_quick_qa { prompt, threadId? }` | `xiaobao-cli qa "<prompt>" [--thread-id ...]` |
-> | `xiaobao_api { method, path, query, body, headers }` | `xiaobao-cli api <METHOD> <PATH> [--query k=v] [--body '<json>'] [--headers k=v]` |
->
-> 用 `--format toon` 切到 TOON（uniform 数组省 30-50% token，LLM 上下文优化）；
-> 用 `--format json`（默认）保持 JSON。state 路径：`~/.xiaobao/`（fallback 读 `~/.openclaw/state/wangxiaobao/`）。
-
-
 # 旺小宝客户关注点查询
 
-调 `xiaobao_list_customer_focus` tool 查 AI 抽出的客户关注点标签。
+跑 `xiaobao-cli focus list` 查 AI 抽出的客户关注点标签。
 跟抗性点 skill 镜像，差别就是底层走 `mv_open_customer_focus` 表。
 
 ## 执行前必读
 
-- 必须有有效 token：先调 `xiaobao_whoami`；未登录就 `xiaobao_authorize`
-- **必须有激活项目**：tool 内部自动读，缺失返回 `NO_ACTIVE_PROJECT`
+- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录就 `xiaobao-cli auth login`
+- **必须有激活项目**：命令内部自动读，缺失返回 `NO_ACTIVE_PROJECT`
 - **数据权限隔离**：按当前用户授权可见顾问范围过滤（普通顾问看自己 /
   团队长看团队 / 项目管理员看全项目）
-- LocalDateTime 格式：`yyyy-MM-dd HH:mm:ss`（空格分隔），plugin 自动转
+- LocalDateTime 格式：`yyyy-MM-dd HH:mm:ss`（空格分隔），CLI 自动转
 - **不要**写文件、出报告
 
 ---
 
 ## 快速索引：意图 → 工具
 
-| 用户意图                             | plugin tool                       | 关键参数                           |
+| 用户意图                             | 命令                       | 关键参数                           |
 | ------------------------------------ | --------------------------------- | ---------------------------------- |
-| 列时段内全部关注点                   | `xiaobao_list_customer_focus`     | `fromDate` / `toDate`              |
-| 看某客户的关注点                     | `xiaobao_list_customers` → `xiaobao_list_customer_focus` | `customerIds: [<wang_id>]` |
-| 看某次到访的关注点                   | `xiaobao_list_customer_focus`     | `visitIds: [<visit_id>]`           |
-| 看某条录音的关注点                   | `xiaobao_list_customer_focus`     | `audioIds: [<audio_id>]`           |
-| 按分类找（一级）                     | `xiaobao_list_customer_focus`     | `category: "户型"` 等              |
-| 按分类找（二级）                     | `xiaobao_list_customer_focus`     | `classification: "户型因素"`        |
-| 估算总数                             | `xiaobao_list_customer_focus`     | `page: 1, size: 1`，只读 `total`   |
+| 列时段内全部关注点                   | `xiaobao-cli focus list`     | `fromDate` / `toDate`              |
+| 看某客户的关注点                     | `xiaobao-cli customer list` → `xiaobao-cli focus list` | `customerIds: [<wang_id>]` |
+| 看某次到访的关注点                   | `xiaobao-cli focus list`     | `visitIds: [<visit_id>]`           |
+| 看某条录音的关注点                   | `xiaobao-cli focus list`     | `audioIds: [<audio_id>]`           |
+| 按分类找（一级）                     | `xiaobao-cli focus list`     | `category: "户型"` 等              |
+| 按分类找（二级）                     | `xiaobao-cli focus list`     | `classification: "户型因素"`        |
+| 估算总数                             | `xiaobao-cli focus list`     | `page: 1, size: 1`，只读 `total`   |
 
 ---
 
@@ -74,7 +42,7 @@ metadata:
 
 ### 1. 客户名 → wang_id 反查
 
-用户说"屈哥的关注点"——先调 `xiaobao_list_customers { customerName: "屈哥" }`
+用户说"屈哥的关注点"——先调 `xiaobao-cli customer list { customerName: "屈哥" }`
 拿到 `customerId`（= wang_id），再传给 `customerIds` 数组（即使只有一个也用数组）。
 
 ### 2. 分类模糊：一级 + 二级二选一或同时用
@@ -137,7 +105,7 @@ classification 二级常见值：户型因素 / 价格因素 / 环境因素 / ..
 }
 ```
 
-plugin tool 又外包一层 → 渲染用 `resp.data.data.content`。
+CLI 又包一层 → 渲染用 `resp.data.data.content`。
 
 ### 5. 渲染给用户时只展示核心
 
@@ -165,11 +133,11 @@ plugin tool 又外包一层 → 渲染用 `resp.data.data.content`。
 
 ```jsonc
 // step 1: 反查 wang_id（如果只知名字）
-// xiaobao_list_customers
+// xiaobao-cli customer list
 { "customerName": "屈哥" }
 
 // step 2: 拿到 customerId = 507016570019512320
-// xiaobao_list_customer_focus
+// xiaobao-cli focus list
 { "customerIds": ["507016570019512320"], "page": 1, "size": 20 }
 ```
 
@@ -192,7 +160,7 @@ plugin tool 又外包一层 → 渲染用 `resp.data.data.content`。
 ## 常见错误与排查
 
 - **`error: 'NO_ACTIVE_PROJECT'`** — 跑 `wangxiaobao-switch-project` skill
-- **401 / token 过期** — 调 `xiaobao_authorize { force: true }` 重登
+- **401 / token 过期** — 调 `xiaobao-cli auth login --force` 重登
 - **`total: 0`** — 过滤条件没匹配 / 该时段没数据 / 当前用户授权范围内没匹配的接待顾问
 - **传入的 ID 找不到对应数据** — 数据权限隔离把不属于授权顾问的 tag 过滤掉了；
   这是预期行为，不是 bug

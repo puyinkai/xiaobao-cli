@@ -8,72 +8,33 @@ metadata:
   cliHelp: "xiaobao-cli audio --help"
 ---
 
-> **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH
-> (`npm i -g @puyinkai/xiaobao-cli` 或 `npx -y @puyinkai/xiaobao-cli`)。
-> Agent 通过 shell 工具（Bash / Run / Shell）执行命令、读 **stdout JSON** 消费；
-> stderr 是进度/错误提示。退出码 0 = 成功，非 0 = 业务/网络错（错误对象同时打到 stdout 可解析）。
->
-> CLI 14 个子命令跟 openclaw-xiaobao plugin 14 个 tool **1:1 等价**，返回 JSON
-> 结构完全一致（`{status, ok, data: {...}}`）。skill 里看到的 `resp.data.data.xxx`
-> 取数路径直接对 stdout JSON 用 `jq` / `JSON.parse` 即可。
->
-> **plugin tool → CLI 命令翻译表（数组参数走逗号分隔）**：
->
-> | plugin tool | CLI 命令 |
-> | --- | --- |
-> | `xiaobao_authorize { force? }` | `xiaobao-cli auth login [--force]` |
-> | `xiaobao_whoami` | `xiaobao-cli auth whoami` |
-> | `xiaobao_logout` | `xiaobao-cli auth logout` |
-> | `xiaobao_list_projects { keyword? }` | `xiaobao-cli project list [--keyword <kw>]` |
-> | `xiaobao_switch_project { tenantId, tenantName, projectId, projectName }` | `xiaobao-cli project use --tenant-id ... --tenant-name ... --project-id ... --project-name ...` |
-> | `xiaobao_list_consultants` | `xiaobao-cli consultant list` |
-> | `xiaobao_list_audio { fromDate, toDate, userId?, userIdList?, page, size }` | `xiaobao-cli audio list --from "..." --to "..." [--user-id ...] [--user-id-list a,b,c] [--page N] [--size N]` |
-> | `xiaobao_get_audio_text { audioId }` | `xiaobao-cli audio text <audioId>` |
-> | `xiaobao_list_customers { ... }` | `xiaobao-cli customer list [--user-id] [--user-name] [--customer-name] [--customer-phone] [--portrait] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_visits { ... }` | `xiaobao-cli visit list [--customer-id] [--customer-name] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_customer_focus { visitIds, customerIds, audioIds, category, classification, fromDate, toDate, ... }` | `xiaobao-cli focus list [--visit-ids a,b] [--customer-ids a,b] [--audio-ids a,b] [--category ...] [--classification ...] [--from ...] [--to ...]` |
-> | `xiaobao_list_customer_resistance { ... }` | `xiaobao-cli resistance list [同 focus]` |
-> | `xiaobao_quick_qa { prompt, threadId? }` | `xiaobao-cli qa "<prompt>" [--thread-id ...]` |
-> | `xiaobao_api { method, path, query, body, headers }` | `xiaobao-cli api <METHOD> <PATH> [--query k=v] [--body '<json>'] [--headers k=v]` |
->
-> 用 `--format toon` 切到 TOON（uniform 数组省 30-50% token，LLM 上下文优化）；
-> 用 `--format json`（默认）保持 JSON。state 路径：`~/.xiaobao/`（fallback 读 `~/.openclaw/state/wangxiaobao/`）。
-
-
 # 旺小宝录音入库
 
 完整工作流：**登录 → 选项目 → 翻页拉元数据 → 逐条取文本 → 按
 **项目 / 顾问 / 日期 / 录音** 分层写 wiki → 推进游标 → ingest 提炼为
 Layer 2 知识页**。
 
-> 每个旺小宝项目落到独立的 `wiki/projects/{projectId}-{projectName}/`
-> 目录，**切项目不会污染另一个项目的录音/顾问画像/客户档案**。同 cwd 下
-> 可并存多个项目的 wiki。
-
-> 只想看一眼录音元数据列表（不写文件、不推游标）请用 `wangxiaobao-audio-query`
-> skill。本 skill 跟它的边界是 **写入 vs 只读**。
-
 ## 上游接口
 
-| 接口 | plugin tool | 用途 |
+| 接口 | 命令 | 用途 |
 | --- | --- | --- |
-| `POST /ai-open/audio/page` | `xiaobao_list_audio` | 分页列录音元数据 |
-| `GET /ai-open/audio/text/{audioId}` | `xiaobao_get_audio_text` | 单条录音转录文本 + 说话人占比 |
+| `POST /ai-open/audio/page` | `xiaobao-cli audio list` | 分页列录音元数据 |
+| `GET /ai-open/audio/text/{audioId}` | `xiaobao-cli audio text` | 单条录音转录文本 + 说话人占比 |
 
 ## 执行前必读
 
-1. **登录**：先调 `xiaobao_whoami`；未登录 / 过期就调 `xiaobao_authorize`。
-2. **激活项目**：tool 内部从 `~/.openclaw/state/wangxiaobao/active-project.json`
-   读 tenant/project。如果任何 tool 返回 `error: 'NO_ACTIVE_PROJECT'`，
+1. **登录**：先调 `xiaobao-cli auth whoami`；未登录 / 过期就调 `xiaobao-cli auth login`。
+2. **激活项目**：命令内部从 `~/.xiaobao/active-project.json`
+   读 tenant/project。如果任何 命令 返回 `error: 'NO_ACTIVE_PROJECT'`，
    先走 `wangxiaobao-switch-project` skill 让用户选。
 3. **拿到 projectId / projectName**（写 wiki 路径用）：调一次
-   `xiaobao_list_projects` 后定位当前 active-project 对应行，或者直接复用
-   `xiaobao_switch_project` 上一次的返回值里的 `activeProject` 字段。
+   `xiaobao-cli project list` 后定位当前 active-project 对应行，或者直接复用
+   `xiaobao-cli project use` 上一次的返回值里的 `activeProject` 字段。
 4. **wiki 输出目录**：默认 `./wiki/`（cwd 下）。如果用户在 cwd `./.env`
    配了 `WIKI_DIR`，用 `${WIKI_DIR}/`。raw/ 子目录是 llm-wiki Layer 1，
    **不可变**。
 5. **游标变量名**：`WB_SYNC_CURSOR`，**仍写到 cwd `./.env`**（游标是 per-workspace
-   的同步进度，不是 plugin 全局状态，跟 active-project 不一样），格式
+   的同步进度，不是 CLI 全局状态，跟 active-project 不一样），格式
    `yyyy-MM-dd HH:mm:ss`。
 6. **wiki schema 必读**：业务知识页结构详见
    [`references/audio-wiki-schema.md`](references/audio-wiki-schema.md)
@@ -85,7 +46,7 @@ Layer 2 知识页**。
 `yyyy-MM-dd HH:mm:ss`（中间空格分隔，**不是** ISO 的 `T`）。
 
 - ✅ `"2026-05-12 12:00:00"`
-- ⚠️ `"2026-05-12T12:00:00"`（plugin tool 内部会自动转空格，但 SKILL 里直接传空格更稳）
+- ⚠️ `"2026-05-12T12:00:00"`（命令 内部会自动转空格，但 SKILL 里直接传空格更稳）
 - ❌ `"2026-05-12T12:00:00+08:00"`（带时区会被剥掉，避免传）
 
 ## 工作流
@@ -106,12 +67,12 @@ Layer 2 知识页**。
 for each window [winStart, winEnd):
   page = 1                              # ⚠️ PageParam 默认从 1 开始
   loop:
-    resp = xiaobao_list_audio {
+    resp = xiaobao-cli audio list {
       fromDate: winStart,
       toDate:   winEnd,
       page,
       size: 50
-      # ⚠️ 没有 tenantId / projectId —— plugin 自己从 active-project 读
+      # ⚠️ 没有 tenantId / projectId —— CLI 自己从 active-project 读
     }
     pageResult = resp.data.data           # Result<PageResult<...>> 拨开两层 envelope
     records = pageResult.content
@@ -121,7 +82,7 @@ for each window [winStart, winEnd):
     否则 page += 1
 ```
 
-若 tool 返回 401 → 调 `xiaobao_authorize { force: true }` 后重试当前窗口
+若 命令 返回 401 → 调 `xiaobao-cli auth login --force` 后重试当前窗口
 （最多重试一次）。
 
 ### 第 3 步：逐条取文本
@@ -129,7 +90,7 @@ for each window [winStart, winEnd):
 每条 record（有 audioId）单独调一次：
 
 ```
-text = xiaobao_get_audio_text {
+text = xiaobao-cli audio text {
   audioId: record.audioId
   # ⚠️ 没有 tenantId / projectId
 }
@@ -153,12 +114,6 @@ wiki/projects/{projectId}-{projectName}/raw/audio/{userId}-{saleName}/{yyyy-MM-d
   saleName 给人看；saleName 里的非法路径字符要 sanitize，详见 schema 文档）
 - 第 2 层 `{yyyy-MM-dd}/` — 录音发生时的日期（从 `record.startTime` 拿）
 - 第 3 层 `{audioId}.md` — 单条录音
-
-> projectId / projectName 取自 plugin 全局 active-project 状态
-> （`~/.openclaw/state/wangxiaobao/active-project.json`，由
-> `wangxiaobao-switch-project` skill / `xiaobao_switch_project` tool 写入）。
-> 本 skill **不读** cwd `.env` 里的 tenant/project，但 sync 游标
-> `WB_SYNC_CURSOR` 仍写在 cwd `.env`。
 
 **frontmatter 必填**：
 
@@ -193,7 +148,7 @@ parent_consultant: "[[consultants/100-张三]]"
 正文：把 `text.texts[]` 按 "speaker: content" 逐行排好，行首带时间戳。
 
 **写入策略**：
-- 用 Write tool 创建文件，**同名文件已存在就跳过**（raw 幂等不可变）
+- 用 Write tool 创建文件（Claude Code 内置写文件工具），**同名文件已存在就跳过**（raw 幂等不可变）
 - 写完一个窗口报"本窗口写入 N 条 / 跳过 M 条同名 / 跳过 K 条无文本"
 
 > 完整 frontmatter 字段含义 + saleName sanitize 规则见
@@ -276,7 +231,7 @@ wiki/projects/{projectId}-{projectName}/
 | "从游标继续" / "继续同步"  | from = WB_SYNC_CURSOR, to = now                               |
 | "重跑某天"                 | 临时用指定窗口，**不**回退游标                                |
 | "干跑 / dry-run"           | 走前 3 步但跳过第 4-5 步的写盘和游标更新                      |
-| "只看某个销售的"           | 先调 `xiaobao_list_consultants` 反查 user-id，再 list_audio 带 `userId: <sale-user-id>` |
+| "只看某个销售的"           | 先调 `xiaobao-cli consultant list` 反查 user-id，再 list_audio 带 `userId: <sale-user-id>` |
 | "把张三本周的录音存下来"   | 同上 + 时间窗口限定本周                                       |
 | "ingest 录音建知识库"      | 跳到第 7 步（前提：raw/ 已经有数据）                          |
 | "拉完顺便 ingest"          | 走完整 7 步（sync + ingest 一站式）                           |
@@ -286,8 +241,8 @@ wiki/projects/{projectId}-{projectName}/
 ## 完整链路
 
 ```
-1. xiaobao_authorize             — 拿到 token
-2. wangxiaobao-switch-project    — 选好租户/项目，写 ~/.openclaw/state/wangxiaobao/active-project.json
+1. xiaobao-cli auth login             — 拿到 token
+2. wangxiaobao-switch-project    — 选好租户/项目，写 ~/.xiaobao/active-project.json
 3. 本 skill - sync 阶段          — 翻页拉 → 逐条取文本 → 按 顾问/日期 写 raw → 推进游标
 4. 本 skill - ingest 阶段         — 读 raw/ → 提炼 4 层 Layer 2 知识页 → 更新 index/log
 ```
@@ -302,9 +257,9 @@ wiki/projects/{projectId}-{projectName}/
 - Token 有效期由 phoenix 端 client 配置决定（默认 1h access + 30d refresh）。
 - 游标为空时默认从 7 天前开始。
 - 首次跑或拉历史范围大时建议先 dry-run。
-- API 路径已封装在 plugin tool 里，**不要**用 `xiaobao_api` 自己拼
+- API 路径已封装在 命令 里，**不要**用 `xiaobao-cli api` 自己拼
   `/audio/page` / `/audio/text/{id}`。
-- 激活项目状态在 `~/.openclaw/state/wangxiaobao/active-project.json`（plugin
+- 激活项目状态在 `~/.xiaobao/active-project.json`（CLI
   全局单份，跟 cwd 无关）；游标 `WB_SYNC_CURSOR` 在 cwd `.env`（per-workspace）。
 - `wiki/projects/.../raw/audio/` 是 Layer 1 不可变，**不要**回写、改名、删除。
 - **批量取文本要节制并发**：一个窗口可能几十条录音，串行调（不要 parallel
@@ -314,13 +269,13 @@ wiki/projects/{projectId}-{projectName}/
 
 ## 常见错误与排查
 
-- **`xiaobao_list_audio` 返回 401** — token 过期 → `xiaobao_authorize { force: true }` 重登
-- **`xiaobao_get_audio_text` 返回 `data: null` / `texts: []`** — 转录未就绪 / 录音异常 → 跳过该条
+- **`xiaobao-cli audio list` 返回 401** — token 过期 → `xiaobao-cli auth login --force` 重登
+- **`xiaobao-cli audio text` 返回 `data: null` / `texts: []`** — 转录未就绪 / 录音异常 → 跳过该条
 - **page 翻不动 / 重复返回同一页** — 检查 page 是否从 1 开始；`total = 0` 直接结束窗口
 - **fromDate/toDate 报参数错** — 用空格分隔的 `yyyy-MM-dd HH:mm:ss`，不带时区
 - **游标没推进** — 窗口中途报错被跳过 → 查哪个窗口失败、修复后从上次成功窗口的末尾重跑
 - **`error: 'NO_ACTIVE_PROJECT'`** — 还没设过激活项目 → 跑
-  `wangxiaobao-switch-project` skill。注意：plugin active-project 是全局单份，
+  `wangxiaobao-switch-project` skill。注意：CLI active-project 是全局单份，
   跟 cwd 无关；游标 `WB_SYNC_CURSOR` 在 cwd `.env` 里，用户切了 cwd 会丢失游标
   上下文，需要从指定时间继续或重新拉
 - **raw/ 写文件冲突** — 同名 audioId 已存在 → 跳过（raw 幂等）

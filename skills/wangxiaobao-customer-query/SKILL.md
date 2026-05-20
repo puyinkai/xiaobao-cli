@@ -8,66 +8,34 @@ metadata:
   cliHelp: "xiaobao-cli customer --help"
 ---
 
-> **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH
-> (`npm i -g @puyinkai/xiaobao-cli` 或 `npx -y @puyinkai/xiaobao-cli`)。
-> Agent 通过 shell 工具（Bash / Run / Shell）执行命令、读 **stdout JSON** 消费；
-> stderr 是进度/错误提示。退出码 0 = 成功，非 0 = 业务/网络错（错误对象同时打到 stdout 可解析）。
->
-> CLI 14 个子命令跟 openclaw-xiaobao plugin 14 个 tool **1:1 等价**，返回 JSON
-> 结构完全一致（`{status, ok, data: {...}}`）。skill 里看到的 `resp.data.data.xxx`
-> 取数路径直接对 stdout JSON 用 `jq` / `JSON.parse` 即可。
->
-> **plugin tool → CLI 命令翻译表（数组参数走逗号分隔）**：
->
-> | plugin tool | CLI 命令 |
-> | --- | --- |
-> | `xiaobao_authorize { force? }` | `xiaobao-cli auth login [--force]` |
-> | `xiaobao_whoami` | `xiaobao-cli auth whoami` |
-> | `xiaobao_logout` | `xiaobao-cli auth logout` |
-> | `xiaobao_list_projects { keyword? }` | `xiaobao-cli project list [--keyword <kw>]` |
-> | `xiaobao_switch_project { tenantId, tenantName, projectId, projectName }` | `xiaobao-cli project use --tenant-id ... --tenant-name ... --project-id ... --project-name ...` |
-> | `xiaobao_list_consultants` | `xiaobao-cli consultant list` |
-> | `xiaobao_list_audio { fromDate, toDate, userId?, userIdList?, page, size }` | `xiaobao-cli audio list --from "..." --to "..." [--user-id ...] [--user-id-list a,b,c] [--page N] [--size N]` |
-> | `xiaobao_get_audio_text { audioId }` | `xiaobao-cli audio text <audioId>` |
-> | `xiaobao_list_customers { ... }` | `xiaobao-cli customer list [--user-id] [--user-name] [--customer-name] [--customer-phone] [--portrait] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_visits { ... }` | `xiaobao-cli visit list [--customer-id] [--customer-name] [--from] [--to] [--page] [--size]` |
-> | `xiaobao_list_customer_focus { visitIds, customerIds, audioIds, category, classification, fromDate, toDate, ... }` | `xiaobao-cli focus list [--visit-ids a,b] [--customer-ids a,b] [--audio-ids a,b] [--category ...] [--classification ...] [--from ...] [--to ...]` |
-> | `xiaobao_list_customer_resistance { ... }` | `xiaobao-cli resistance list [同 focus]` |
-> | `xiaobao_quick_qa { prompt, threadId? }` | `xiaobao-cli qa "<prompt>" [--thread-id ...]` |
-> | `xiaobao_api { method, path, query, body, headers }` | `xiaobao-cli api <METHOD> <PATH> [--query k=v] [--body '<json>'] [--headers k=v]` |
->
-> 用 `--format toon` 切到 TOON（uniform 数组省 30-50% token，LLM 上下文优化）；
-> 用 `--format json`（默认）保持 JSON。state 路径：`~/.xiaobao/`（fallback 读 `~/.openclaw/state/wangxiaobao/`）。
-
-
 # 旺小宝客户分页查询
 
-调 `xiaobao_list_customers` tool 查当前激活项目的客户画像列表。
+跑 `xiaobao-cli customer list` 查当前激活项目的客户画像列表。
 零副作用，鼓励放心调用。
 
 ## 执行前必读
 
-- 必须有有效 token：先调 `xiaobao_whoami`；未登录就 `xiaobao_authorize`
-- **必须有激活项目**：tool 内部自动读，如果返回 `NO_ACTIVE_PROJECT` 就跑
+- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录就 `xiaobao-cli auth login`
+- **必须有激活项目**：命令内部自动读，如果返回 `NO_ACTIVE_PROJECT` 就跑
   `wangxiaobao-switch-project` skill
 - **数据权限隔离**：后端按"当前用户授权可见的顾问范围"过滤（普通顾问看自己 /
   团队长看团队 / 项目管理员看全项目）。当前用户无权访问的顾问名下客户**看不到**——
   这不是 bug
-- LocalDateTime 格式：`yyyy-MM-dd HH:mm:ss`（空格分隔），plugin 自动转 ISO
+- LocalDateTime 格式：`yyyy-MM-dd HH:mm:ss`（空格分隔），CLI 自动转 ISO
 - **不要**写文件、出报告
 
 ---
 
 ## 快速索引：意图 → 工具
 
-| 用户意图                       | plugin tool                | 关键参数                           |
+| 用户意图                       | 命令                | 关键参数                           |
 | ------------------------------ | -------------------------- | ---------------------------------- |
-| 列全部客户（最近来访的在前）   | `xiaobao_list_customers`   | `page` / `size`                    |
-| 看某顾问名下客户               | `xiaobao_list_consultants` → `xiaobao_list_customers` | `userId: <反查的 id>` |
-| 按客户画像找                   | `xiaobao_list_customers`   | `portrait: "高意向"` 等            |
-| 按客户姓名 / 手机号模糊        | `xiaobao_list_customers`   | `customerName` / `customerPhone`   |
-| 按最后来访时间筛               | `xiaobao_list_customers`   | `fromDate` / `toDate`              |
-| 估算总数                       | `xiaobao_list_customers`   | `page: 1, size: 1`，只读 `total`   |
+| 列全部客户（最近来访的在前）   | `xiaobao-cli customer list`   | `page` / `size`                    |
+| 看某顾问名下客户               | `xiaobao-cli consultant list` → `xiaobao-cli customer list` | `userId: <反查的 id>` |
+| 按客户画像找                   | `xiaobao-cli customer list`   | `portrait: "高意向"` 等            |
+| 按客户姓名 / 手机号模糊        | `xiaobao-cli customer list`   | `customerName` / `customerPhone`   |
+| 按最后来访时间筛               | `xiaobao-cli customer list`   | `fromDate` / `toDate`              |
+| 估算总数                       | `xiaobao-cli customer list`   | `page: 1, size: 1`，只读 `total`   |
 
 ---
 
@@ -78,9 +46,9 @@ metadata:
 用户说"张三的客户"——**不要**直接传 `userName: "张三"`（虽然支持但是 LIKE 模糊）。
 正确做法：
 
-1. 调 `xiaobao_list_consultants` 拿当前授权范围内的顾问列表
+1. 调 `xiaobao-cli consultant list` 拿当前授权范围内的顾问列表
 2. 找 `userName === "张三"` 的 `userId`
-3. 调 `xiaobao_list_customers { userId: <张三的 userId> }` 精确过滤
+3. 调 `xiaobao-cli customer list { userId: <张三的 userId> }` 精确过滤
 
 如果 list-consultants 里**找不到张三**——说明当前用户没权限看张三名下数据，
 告诉用户"当前账号无权访问销售『张三』"，不要再硬试。
@@ -111,7 +79,7 @@ PageParam 默认 `page: 1, size: 10`。传 `page: 0` 报错。`size` 上限 500�
 
 ### 5. 响应外层
 
-`xiaobao_list_customers` 返回：
+`xiaobao-cli customer list` 返回：
 
 ```jsonc
 {
@@ -137,7 +105,7 @@ PageParam 默认 `page: 1, size: 10`。传 `page: 0` 报错。`size` 上限 500�
 }
 ```
 
-plugin tool 又外包一层 `{ status, ok, data }` —— 取数据用 `resp.data.data.content`。
+CLI 又包一层 `{ status, ok, data }` —— 取数据用 `resp.data.data.content`。
 
 ---
 
@@ -162,12 +130,12 @@ plugin tool 又外包一层 `{ status, ok, data }` —— 取数据用 `resp.dat
 
 ```jsonc
 // step 1
-// xiaobao_list_consultants
+// xiaobao-cli consultant list
 {}
 
 // step 2 ——找到陈平的 userId = 270078836362715136
 // step 3
-// xiaobao_list_customers
+// xiaobao-cli customer list
 { "userId": 270078836362715136, "page": 1, "size": 20 }
 ```
 
@@ -194,7 +162,7 @@ plugin tool 又外包一层 `{ status, ok, data }` —— 取数据用 `resp.dat
 ## 常见错误与排查
 
 - **`error: 'NO_ACTIVE_PROJECT'`** — 跑 `wangxiaobao-switch-project` skill
-- **401 / token 过期** — 调 `xiaobao_authorize { force: true }` 重登
+- **401 / token 过期** — 调 `xiaobao-cli auth login --force` 重登
 - **`total: 0`** — 时间窗口 / 过滤条件没匹配到，**或**当前用户授权范围为空
   （新人顾问刚入职 / 团队成员被移走等）
 - **顾问名找不到** — 不在当前用户授权可见范围内；不要硬调 list_customers 试
