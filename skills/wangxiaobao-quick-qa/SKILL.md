@@ -47,8 +47,8 @@ ID / 时间窗口——AI 会自己定义合理范围。
 
 ### 2. 多轮：threadId 由 agent 自己接续
 
-第一轮**不传** `threadId`，走单轮模式。响应里有 `resp.data.data.thread_id`，
-**记在 agent 当前对话上下文里**，后续追问把它原样传回 `threadId` 入参。
+第一轮**不传** `--thread-id`，走单轮模式。响应里有 `resp.data.data.thread_id`，
+**记在 agent 当前对话上下文里**，后续追问把它原样传回 `--thread-id` 入参。
 **不要**把 thread_id 写到任何文件 / .env / 状态——它只是会话短期记忆。
 
 跨 session（用户关了 chat）就**不再延续**，新 session 重新发起新一轮即可。
@@ -93,9 +93,8 @@ CLI 又把上面塞进 `{ status, ok, data }` 外包：拿最终文本写
 
 ### 场景 1：问客户来访
 
-```jsonc
-// xiaobao-cli qa
-{ "prompt": "今天到访了多少组客户，里面有几组是首访？" }
+```bash
+xiaobao-cli qa "今天到访了多少组客户，里面有几组是首访？"
 ```
 
 渲染：
@@ -110,8 +109,8 @@ CLI 又把上面塞进 `{ status, ok, data }` 外包：拿最终文本写
 
 ### 场景 2：问销冠
 
-```jsonc
-{ "prompt": "本月销冠是谁，业绩多少？" }
+```bash
+xiaobao-cli qa "本月销冠是谁，业绩多少？"
 ```
 
 渲染：
@@ -124,8 +123,8 @@ CLI 又把上面塞进 `{ status, ok, data }` 外包：拿最终文本写
 
 ### 场景 3：问录音覆盖率
 
-```jsonc
-{ "prompt": "本周录音覆盖率怎么样？哪些销售覆盖低？" }
+```bash
+xiaobao-cli qa "本周录音覆盖率怎么样？哪些销售覆盖低？"
 ```
 
 渲染：
@@ -143,24 +142,20 @@ CLI 又把上面塞进 `{ status, ok, data }` 外包：拿最终文本写
 用户："那张三跟客户讲到学区时通常怎么应对？"
 （接着上一轮 ——agent 自己存了 threadId）
 
-```jsonc
-{
-  "prompt": "那张三跟客户讲到学区时通常怎么应对？",
-  "threadId": "<上一轮 resp.data.data.thread_id>"
-}
+```bash
+xiaobao-cli qa "那张三跟客户讲到学区时通常怎么应对？" --thread-id "<上一轮 resp.data.data.thread_id>"
 ```
 
-### 场景 5：带额外 context
+### 场景 5：带额外 context（v0.1.x 暂不支持）
 
-```jsonc
-{
-  "prompt": "评估一下这个客户的成交概率",
-  "context": {
-    "customer_id": 12345,
-    "recent_audio_ids": [9001, 9023, 9045]
-  }
-}
+CLI 当前只暴露 `--thread-id`，不支持 `--context` JSON 入参。要给 AI 喂上下文，
+**把上下文直接写进 prompt** 即可：
+
+```bash
+xiaobao-cli qa "评估一下客户 12345 的成交概率，相关录音 audioId: 9001, 9023, 9045"
 ```
+
+后端 AI 会从 prompt 文本里识别 customer_id / audio 引用。
 
 ---
 

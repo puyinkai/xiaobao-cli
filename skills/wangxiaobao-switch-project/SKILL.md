@@ -27,14 +27,16 @@ metadata:
 
 ### 第 1 步：拿到项目列表
 
-调用 命令 `xiaobao-cli project list`。**可选 `keyword` 参数**对租户名/
-项目名做包含模糊过滤（大小写不敏感）：
+跑命令 `xiaobao-cli project list`，可选 `--keyword <kw>` 对租户名/项目名做
+包含模糊过滤（大小写不敏感）：
 
-- 用户已经说了想要哪个项目（如"切到盛世禧悦"）→ **直接带 `keyword`**：
-  `xiaobao-cli project list { keyword: "盛世禧悦" }`，收敛后通常只剩 1-2 条，
-  省去让用户从一长串里挑
-- 用户只说"换个项目""看看有哪些" → 不带 keyword，拉全量
-- 账号项目很多、全量列表太长 → 提示用户给个关键字，再带 `keyword` 重查
+- 用户已经说了想要哪个项目（如"切到盛世禧悦"）→ **直接带 `--keyword`**：
+  ```bash
+  xiaobao-cli project list --keyword 盛世禧悦
+  ```
+  收敛后通常只剩 1-2 条，省去让用户从一长串里挑
+- 用户只说"换个项目""看看有哪些" → 不带 `--keyword`，拉全量
+- 账号项目很多、全量列表太长 → 提示用户给个关键字，再带 `--keyword` 重查
 
 返回结构：
 ```json
@@ -50,9 +52,9 @@ metadata:
 
 如果 `count == 0`：
 
-- **带了 `keyword`** → 是关键字没命中，不是没权限。提示用户换更短的关键字、
+- **带了 `--keyword`** → 是关键字没命中，不是没权限。提示用户换更短的关键字、
   或不带 keyword 看全量；**不要**直接说"没有项目"
-- **没带 `keyword`** → 账号确实没有可访问的项目，结束
+- **没带 `--keyword`** → 账号确实没有可访问的项目，结束
 
 如果 命令 报错（401 / token 过期等），先调 `xiaobao-cli auth login --force` 重新登录，再重试一次。
 
@@ -75,16 +77,15 @@ metadata:
 
 ### 第 3 步：跑 `xiaobao-cli project use` 落地
 
-```json
-{
-  "tenantId":    "<选中条目的 tenantId>",
-  "tenantName":  "<选中条目的 tenantName>",
-  "projectId":   "<选中条目的 projectId>",
-  "projectName": "<选中条目的 projectName>"
-}
+```bash
+xiaobao-cli project use \
+  --tenant-id   "<选中条目的 tenantId>" \
+  --tenant-name "<选中条目的 tenantName>" \
+  --project-id  "<选中条目的 projectId>" \
+  --project-name "<选中条目的 projectName>"
 ```
 
-成功返回：
+4 个 flag 都是必填。成功 stdout 返回：
 
 ```json
 {
@@ -121,10 +122,21 @@ metadata:
 
 ---
 
-## 仅查看不切换
+## 仅查看 / 查当前激活
 
-用户只想"看看有哪些项目"而**不切换**时，调 `xiaobao-cli project list`（必要时带
-`keyword` 收敛）渲染列表后停下来，不要跑 `xiaobao-cli project use`。
+| 场景 | 命令 |
+| --- | --- |
+| 看自己有哪些项目可选 | `xiaobao-cli project list` （必要时带 `--keyword <kw>` 收敛） |
+| **查当前激活的是哪个项目** | `xiaobao-cli project current` |
+| 切到新项目 | 走「流程」三步 |
+
+`project current` 直接读 `~/.xiaobao/active-project.json`（fallback
+`~/.openclaw/state/wangxiaobao/active-project.json`），返回当前激活的
+tenant/project + `updatedAt`。如果用户问"现在是哪个项目""当前激活的是啥"，
+**优先**用 `project current`，不要全量 `project list` 再让用户辨认。
+
+没激活过时 `project current` 返 `NO_ACTIVE_PROJECT` 错（同时 stdout 含
+`hint` 字段告诉怎么激活）。
 
 ---
 

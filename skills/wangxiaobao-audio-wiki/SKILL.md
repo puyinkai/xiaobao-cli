@@ -231,7 +231,7 @@ wiki/projects/{projectId}-{projectName}/
 | "从游标继续" / "继续同步"  | from = WB_SYNC_CURSOR, to = now                               |
 | "重跑某天"                 | 临时用指定窗口，**不**回退游标                                |
 | "干跑 / dry-run"           | 走前 3 步但跳过第 4-5 步的写盘和游标更新                      |
-| "只看某个销售的"           | 先调 `xiaobao-cli consultant list` 反查 user-id，再 list_audio 带 `userId: <sale-user-id>` |
+| "只看某个销售的"           | 先调 `xiaobao-cli consultant list` 反查 user-id，再 list_audio 带 `--user-id <sale-user-id>` |
 | "把张三本周的录音存下来"   | 同上 + 时间窗口限定本周                                       |
 | "ingest 录音建知识库"      | 跳到第 7 步（前提：raw/ 已经有数据）                          |
 | "拉完顺便 ingest"          | 走完整 7 步（sync + ingest 一站式）                           |

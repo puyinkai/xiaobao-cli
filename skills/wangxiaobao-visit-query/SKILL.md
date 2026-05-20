@@ -26,11 +26,11 @@ metadata:
 
 | 用户意图                       | 命令             | 关键参数                                |
 | ------------------------------ | ----------------------- | --------------------------------------- |
-| 列时间窗内的全部来访           | `xiaobao-cli visit list`   | `fromDate` / `toDate`                   |
-| 看某客户的来访历史             | `xiaobao-cli customer list` → `xiaobao-cli visit list` | `customerId: <反查的 wang_id>` |
-| 按客户名字模糊找来访           | `xiaobao-cli visit list`   | `customerName: "张"`                    |
+| 列时间窗内的全部来访           | `xiaobao-cli visit list`   | `--from` / `--to`                   |
+| 看某客户的来访历史             | `xiaobao-cli customer list` → `xiaobao-cli visit list` | `--customer-id 反查的 wang_id` |
+| 按客户名字模糊找来访           | `xiaobao-cli visit list`   | `--customer-name 张`                    |
 | **看某次来访的录音详情**       | `xiaobao-cli visit list`   | 直接读返回里的 `audios[]`（含 fileUrl） |
-| 估算总数                       | `xiaobao-cli visit list`   | `page: 1, size: 1`，只读 `total`        |
+| 估算总数                       | `xiaobao-cli visit list`   | `--page 1 --size 1`，只读 `total`        |
 
 ---
 
@@ -40,10 +40,10 @@ metadata:
 
 用户说"李女士最近几次来访"——**优先**走两步：
 
-1. 调 `xiaobao-cli customer list { customerName: "李女士" }` 反查到 `customerId`
+1. 调 `xiaobao-cli customer list { customerName: "李女士" }` 反查到 `--customer-id`
 2. 调 `xiaobao-cli visit list { customerId: <wang_id> }` 拿来访历史
 
-直接传 `customerName` 也能用（后端 JOIN customer_profile 模糊匹配），但：
+直接传 `--customer-name` 也能用（后端 JOIN customer_profile 模糊匹配），但：
 - 同名客户可能有多个（重名 "李女士"），结果混在一起不好辨认
 - JOIN 慢于纯 visit 表查询
 
@@ -128,8 +128,8 @@ CLI 又包一层 → `resp.data.data.content`。
 
 ### 场景 1：今天到访列表
 
-```jsonc
-{ "fromDate": "2026-05-13 00:00:00", "toDate": "2026-05-14 00:00:00" }
+```bash
+xiaobao-cli visit list --from "2026-05-13 00:00:00" --to "2026-05-14 00:00:00"
 ```
 
 渲染：
@@ -143,37 +143,35 @@ CLI 又包一层 → `resp.data.data.content`。
 
 ### 场景 2：李女士最近 3 次来访
 
-```jsonc
-// step 1: 反查 wang_id
-// xiaobao-cli customer list
-{ "customerName": "李女士", "size": 20 }
+```bash
+# step 1: 反查 wang_id
+xiaobao-cli customer list --customer-name 李女士 --size 20
 
-// step 2: 假设找到 customerId = 270072120829026305
-// xiaobao-cli visit list
-{ "customerId": "270072120829026305", "page": 1, "size": 3 }
+# step 2: 假设找到 customerId = 270072120829026305
+xiaobao-cli visit list --customer-id 270072120829026305 --page 1 --size 3
 ```
 
 ### 场景 3：上周末来访高峰
 
-```jsonc
-{ "fromDate": "2026-05-10 00:00:00", "toDate": "2026-05-12 00:00:00", "page": 1, "size": 50 }
+```bash
+xiaobao-cli visit list --from "2026-05-10 00:00:00" --to "2026-05-12 00:00:00" --page 1 --size 50
 ```
 
 后处理：按 hour 聚合 → 报告"周日下午 14-16 点是峰值"。
 
 ### 场景 4：用客户名直接模糊
 
-```jsonc
-// 不知道具体客户 ID，先用名字模糊
-{ "customerName": "张", "fromDate": "2026-05-01 00:00:00", "size": 20 }
+```bash
+# 不知道具体客户 ID，先用名字模糊
+xiaobao-cli visit list --customer-name 张 --from "2026-05-01 00:00:00" --size 20
 ```
 
 回复："姓张的客户 5 月来访共 8 次，分布在 3 位客户：张先生(133****0692) 来 3 次..."
 
 ### 场景 5：直接看某次到访的录音详情
 
-```jsonc
-{ "customerId": "1685535452481236993", "page": 1, "size": 5 }
+```bash
+xiaobao-cli visit list --customer-id 1685535452481236993 --page 1 --size 5
 ```
 
 每条 visit 已带 `audios[]`，**不必再调** `xiaobao-cli audio list`：

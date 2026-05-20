@@ -28,13 +28,13 @@ metadata:
 
 | 用户意图                             | 命令                       | 关键参数                           |
 | ------------------------------------ | --------------------------------- | ---------------------------------- |
-| 列时段内全部关注点                   | `xiaobao-cli focus list`     | `fromDate` / `toDate`              |
-| 看某客户的关注点                     | `xiaobao-cli customer list` → `xiaobao-cli focus list` | `customerIds: [<wang_id>]` |
-| 看某次到访的关注点                   | `xiaobao-cli focus list`     | `visitIds: [<visit_id>]`           |
-| 看某条录音的关注点                   | `xiaobao-cli focus list`     | `audioIds: [<audio_id>]`           |
-| 按分类找（一级）                     | `xiaobao-cli focus list`     | `category: "户型"` 等              |
-| 按分类找（二级）                     | `xiaobao-cli focus list`     | `classification: "户型因素"`        |
-| 估算总数                             | `xiaobao-cli focus list`     | `page: 1, size: 1`，只读 `total`   |
+| 列时段内全部关注点                   | `xiaobao-cli focus list`     | `--from` / `--to`              |
+| 看某客户的关注点                     | `xiaobao-cli customer list` → `xiaobao-cli focus list` | `--customer-ids <wang_id>` |
+| 看某次到访的关注点                   | `xiaobao-cli focus list`     | `--visit-ids <visit_id>`           |
+| 看某条录音的关注点                   | `xiaobao-cli focus list`     | `--audio-ids <audio_id>`           |
+| 按分类找（一级）                     | `xiaobao-cli focus list`     | `--category 户型` 等              |
+| 按分类找（二级）                     | `xiaobao-cli focus list`     | `--classification 户型因素`        |
+| 估算总数                             | `xiaobao-cli focus list`     | `--page 1 --size 1`，只读 `total`   |
 
 ---
 
@@ -43,7 +43,7 @@ metadata:
 ### 1. 客户名 → wang_id 反查
 
 用户说"屈哥的关注点"——先调 `xiaobao-cli customer list { customerName: "屈哥" }`
-拿到 `customerId`（= wang_id），再传给 `customerIds` 数组（即使只有一个也用数组）。
+拿到 `--customer-id`（= wang_id），再传给 `--customer-ids` 数组（即使只有一个也用数组）。
 
 ### 2. 分类模糊：一级 + 二级二选一或同时用
 
@@ -52,7 +52,7 @@ category 一级常见值：户型 / 价格 / 环境 / 教育 / 交通 / 商业�
 classification 二级常见值：户型因素 / 价格因素 / 环境因素 / ... / 位置因素 / 发展因素
 ```
 
-模糊关键词越短越宽：`category: "户型"` 同时命中 "户型因素" 和别的含 "户型" 的分类。
+模糊关键词越短越宽：`--category 户型` 同时命中 "户型因素" 和别的含 "户型" 的分类。
 
 ### 3. 时间窗：用户没明确说就推断
 
@@ -119,38 +119,32 @@ CLI 又包一层 → 渲染用 `resp.data.data.content`。
 
 ### 场景 1：本月客户最在意什么
 
-```jsonc
-{
-  "fromDate": "2026-05-01 00:00:00",
-  "toDate":   "2026-06-01 00:00:00",
-  "page": 1, "size": 50
-}
+```bash
+xiaobao-cli focus list --from "2026-05-01 00:00:00" --to "2026-06-01 00:00:00" --page 1 --size 50
 ```
 
-后处理：按 `category` 聚合 → "5 月份 87 条关注点：户型因素 28 条 / 价格因素 19 条 / ..."。
+后处理：按 `--category` 聚合 → "5 月份 87 条关注点：户型因素 28 条 / 价格因素 19 条 / ..."。
 
 ### 场景 2：屈哥本次到访的关注点
 
-```jsonc
-// step 1: 反查 wang_id（如果只知名字）
-// xiaobao-cli customer list
-{ "customerName": "屈哥" }
+```bash
+# step 1: 反查 wang_id（如果只知名字）
+xiaobao-cli customer list --customer-name 屈哥
 
-// step 2: 拿到 customerId = 507016570019512320
-// xiaobao-cli focus list
-{ "customerIds": ["507016570019512320"], "page": 1, "size": 20 }
+# step 2: 拿到 customerId = 507016570019512320，用 --customer-ids 过滤
+xiaobao-cli focus list --customer-ids 507016570019512320 --page 1 --size 20
 ```
 
 ### 场景 3：户型相关关注点
 
-```jsonc
-{ "category": "户型", "page": 1, "size": 30 }
+```bash
+xiaobao-cli focus list --category 户型 --page 1 --size 30
 ```
 
 ### 场景 4：特定录音里的关注点
 
-```jsonc
-{ "audioIds": ["507494047338729472"], "page": 1, "size": 50 }
+```bash
+xiaobao-cli focus list --audio-ids 507494047338729472 --page 1 --size 50
 ```
 
 渲染：列出该录音里 AI 抽出的所有关注点，按 startOffset 升序展示原文 + 描述。

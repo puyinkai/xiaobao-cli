@@ -30,12 +30,12 @@ metadata:
 
 | 用户意图                       | 命令                | 关键参数                           |
 | ------------------------------ | -------------------------- | ---------------------------------- |
-| 列全部客户（最近来访的在前）   | `xiaobao-cli customer list`   | `page` / `size`                    |
-| 看某顾问名下客户               | `xiaobao-cli consultant list` → `xiaobao-cli customer list` | `userId: <反查的 id>` |
-| 按客户画像找                   | `xiaobao-cli customer list`   | `portrait: "高意向"` 等            |
-| 按客户姓名 / 手机号模糊        | `xiaobao-cli customer list`   | `customerName` / `customerPhone`   |
-| 按最后来访时间筛               | `xiaobao-cli customer list`   | `fromDate` / `toDate`              |
-| 估算总数                       | `xiaobao-cli customer list`   | `page: 1, size: 1`，只读 `total`   |
+| 列全部客户（最近来访的在前）   | `xiaobao-cli customer list`   | `--page` / `--size`                    |
+| 看某顾问名下客户               | `xiaobao-cli consultant list` → `xiaobao-cli customer list` | `--user-id <反查的 id>` |
+| 按客户画像找                   | `xiaobao-cli customer list`   | `--portrait 高意向` 等            |
+| 按客户姓名 / 手机号模糊        | `xiaobao-cli customer list`   | `--customer-name` / `--customer-phone`   |
+| 按最后来访时间筛               | `xiaobao-cli customer list`   | `--from` / `--to`              |
+| 估算总数                       | `xiaobao-cli customer list`   | `--page 1 --size 1`，只读 `total`   |
 
 ---
 
@@ -47,7 +47,7 @@ metadata:
 正确做法：
 
 1. 调 `xiaobao-cli consultant list` 拿当前授权范围内的顾问列表
-2. 找 `userName === "张三"` 的 `userId`
+2. 找 `userName === "张三"` 的 `--user-id`
 3. 调 `xiaobao-cli customer list { userId: <张三的 userId> }` 精确过滤
 
 如果 list-consultants 里**找不到张三**——说明当前用户没权限看张三名下数据，
@@ -57,8 +57,8 @@ metadata:
 
 后端在 `dynamic_tags` JSON 文本上 `LIKE '%xxx%'`。所以：
 
-- `portrait: "高意向"` 命中 `{"高意向客户":"高意向客户"}` / `{"AI意向判定":"高意向"}` 等
-- `portrait: "价格"` 命中 `{"抗性点":"价格"}` 等
+- `--portrait 高意向` 命中 `{"高意向客户":"高意向客户"}` / `{"AI意向判定":"高意向"}` 等
+- `--portrait 价格` 命中 `{"抗性点":"价格"}` 等
 - 不要传完整 JSON / key=value 形式（不支持，反而匹不到）
 
 ### 3. 时间窗：用户没明确说就推断
@@ -75,7 +75,7 @@ metadata:
 
 ### 4. 分页：page 从 **1** 开始
 
-PageParam 默认 `page: 1, size: 10`。传 `page: 0` 报错。`size` 上限 500。
+PageParam 默认 `--page 1 --size 10`。传 `page: 0` 报错。`--size` 上限 500。
 
 ### 5. 响应外层
 
@@ -113,8 +113,8 @@ CLI 又包一层 `{ status, ok, data }` —— 取数据用 `resp.data.data.cont
 
 ### 场景 1：列我能看到的高意向客户
 
-```jsonc
-{ "portrait": "高意向", "page": 1, "size": 20 }
+```bash
+xiaobao-cli customer list --portrait 高意向 --page 1 --size 20
 ```
 
 渲染：
@@ -128,31 +128,25 @@ CLI 又包一层 `{ status, ok, data }` —— 取数据用 `resp.data.data.cont
 
 ### 场景 2：陈平名下的客户
 
-```jsonc
-// step 1
-// xiaobao-cli consultant list
-{}
+```bash
+# step 1: 反查陈平的 user-id
+xiaobao-cli consultant list
 
-// step 2 ——找到陈平的 userId = 270078836362715136
-// step 3
-// xiaobao-cli customer list
-{ "userId": 270078836362715136, "page": 1, "size": 20 }
+# step 2: 假设找到陈平的 userId = 270078836362715136
+# step 3: 用 --user-id 过滤
+xiaobao-cli customer list --user-id 270078836362715136 --page 1 --size 20
 ```
 
 ### 场景 3：5 月来访的客户里抗性是价格的
 
-```jsonc
-{
-  "portrait": "价格",
-  "fromDate": "2026-05-01 00:00:00",
-  "toDate":   "2026-06-01 00:00:00"
-}
+```bash
+xiaobao-cli customer list --portrait 价格 --from "2026-05-01 00:00:00" --to "2026-06-01 00:00:00"
 ```
 
 ### 场景 4：估算总数
 
-```jsonc
-{ "page": 1, "size": 1 }
+```bash
+xiaobao-cli customer list --page 1 --size 1
 ```
 
 回复：「当前授权范围下共 1247 位客户」。

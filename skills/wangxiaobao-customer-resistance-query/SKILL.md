@@ -29,13 +29,13 @@ metadata:
 
 | 用户意图                             | 命令                            | 关键参数                           |
 | ------------------------------------ | -------------------------------------- | ---------------------------------- |
-| 列时段内全部抗性点                   | `xiaobao-cli resistance list`     | `fromDate` / `toDate`              |
-| 看某客户的抗性                       | `xiaobao-cli customer list` → `xiaobao-cli resistance list` | `customerIds: [<wang_id>]` |
-| 看某次到访的抗性                     | `xiaobao-cli resistance list`     | `visitIds: [<visit_id>]`           |
-| 看某条录音的抗性                     | `xiaobao-cli resistance list`     | `audioIds: [<audio_id>]`           |
-| 按分类找（一级）                     | `xiaobao-cli resistance list`     | `category: "价格"` 等              |
-| 按分类找（二级）                     | `xiaobao-cli resistance list`     | `classification: "价格因素"`        |
-| 估算总数                             | `xiaobao-cli resistance list`     | `page: 1, size: 1`，只读 `total`   |
+| 列时段内全部抗性点                   | `xiaobao-cli resistance list`     | `--from` / `--to`              |
+| 看某客户的抗性                       | `xiaobao-cli customer list` → `xiaobao-cli resistance list` | `--customer-ids <wang_id>` |
+| 看某次到访的抗性                     | `xiaobao-cli resistance list`     | `--visit-ids <visit_id>`           |
+| 看某条录音的抗性                     | `xiaobao-cli resistance list`     | `--audio-ids <audio_id>`           |
+| 按分类找（一级）                     | `xiaobao-cli resistance list`     | `--category 价格` 等              |
+| 按分类找（二级）                     | `xiaobao-cli resistance list`     | `--classification 价格因素`        |
+| 估算总数                             | `xiaobao-cli resistance list`     | `--page 1 --size 1`，只读 `total`   |
 
 ---
 
@@ -44,7 +44,7 @@ metadata:
 ### 1. 客户名 → wang_id 反查
 
 用户说"屈哥的抗性"——先调 `xiaobao-cli customer list { customerName: "屈哥" }` 拿到
-`customerId`，再传 `customerIds` 数组。
+`--customer-id`，再传 `--customer-ids` 数组。
 
 ### 2. 分类模糊：一级 + 二级二选一或同时用
 
@@ -105,7 +105,7 @@ classification 二级常见值：户型因素 / 价格因素 / 环境因素 / ..
 ### 6. TOP 抗性原因聚合
 
 用户问"我们项目客户最大的抗性是什么"——拉一页 `size: 100`，agent 后处理按
-`category` 聚合输出："5 月共 89 条抗性：价格因素 42 条（47%）/ 户型因素 23 条 /
+`--category` 聚合输出："5 月共 89 条抗性：价格因素 42 条（47%）/ 户型因素 23 条 /
 环境因素 12 条 / ..."。
 
 ---
@@ -114,20 +114,16 @@ classification 二级常见值：户型因素 / 价格因素 / 环境因素 / ..
 
 ### 场景 1：本月客户最主要的抗性
 
-```jsonc
-{
-  "fromDate": "2026-05-01 00:00:00",
-  "toDate":   "2026-06-01 00:00:00",
-  "page": 1, "size": 100
-}
+```bash
+xiaobao-cli resistance list --from "2026-05-01 00:00:00" --to "2026-06-01 00:00:00" --page 1 --size 100
 ```
 
 按 category 聚合 → "本月 89 条抗性中价格类占 47%，户型 26%，..."。
 
 ### 场景 2：价格抗性的具体说法
 
-```jsonc
-{ "category": "价格", "page": 1, "size": 20 }
+```bash
+xiaobao-cli resistance list --category 价格 --page 1 --size 20
 ```
 
 列出 20 条价格抗性原文，让 LLM 帮销售总结"客户主要嫌车位价高、楼层差价大、
@@ -135,18 +131,14 @@ classification 二级常见值：户型因素 / 价格因素 / 环境因素 / ..
 
 ### 场景 3：屈哥这次到访都嫌什么
 
-```jsonc
-{ "visitIds": ["510395382098829312"], "page": 1, "size": 50 }
+```bash
+xiaobao-cli resistance list --visit-ids 510395382098829312 --page 1 --size 50
 ```
 
 ### 场景 4：户型 + 时间窗组合
 
-```jsonc
-{
-  "category":  "户型",
-  "fromDate":  "2026-05-01 00:00:00",
-  "toDate":    "2026-06-01 00:00:00"
-}
+```bash
+xiaobao-cli resistance list --category 户型 --from "2026-05-01 00:00:00" --to "2026-06-01 00:00:00"
 ```
 
 回复："5 月户型抗性 23 条，主要集中在'房间小'（11）/'朝向不好'（5）/'楼间距'（4）..."。

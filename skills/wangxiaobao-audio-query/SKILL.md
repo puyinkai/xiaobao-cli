@@ -32,12 +32,12 @@ metadata:
 
 | 用户意图               | 命令                | 关键参数                                  |
 | ---------------------- | -------------------------- | ----------------------------------------- |
-| 列某时段所有录音元数据 | `xiaobao-cli audio list`       | `fromDate` / `toDate`                     |
-| 列某销售的录音         | `xiaobao-cli audio list`       | `+ userId: <uid>`（多个销售用 `userIdList`） |
+| 列某时段所有录音元数据 | `xiaobao-cli audio list`       | `--from` / `--to`                     |
+| 列某销售的录音         | `xiaobao-cli audio list`       | `+ --user-id <uid>`（多个销售用 `--user-id-list`） |
 | 反查销售 user-id       | `xiaobao-cli consultant list` | 无参（拿当前用户授权范围内的所有顾问）   |
-| 看总数 / 估个量        | `xiaobao-cli audio list`       | `page: 1, size: 1`，只读 `total`          |
-| 翻页继续看             | `xiaobao-cli audio list`       | `page += 1`                               |
-| 看某条录音转录预览     | `xiaobao-cli audio text`   | `audioId`（从 list_audio 结果拿）         |
+| 看总数 / 估个量        | `xiaobao-cli audio list`       | `--page 1 --size 1`，只读 `total`          |
+| 翻页继续看             | `xiaobao-cli audio list`       | `--page` 递增                               |
+| 看某条录音转录预览     | `xiaobao-cli audio text`   | `--audio-id`（从 list_audio 结果拿）         |
 
 **命令 参数里没有** `tenantId` / `projectId` —— CLI 内部从激活项目状态读。
 如果还没激活过项目，跑 `wangxiaobao-switch-project` skill 先设一次。
@@ -62,18 +62,18 @@ metadata:
 
 ### 2. 分页：page 从 **1** 开始
 
-PageParam 默认 `page: 1, size: 10`，传 `page: 0` 上游会报错。读 `total` +
+PageParam 默认 `--page 1 --size 10`，传 `page: 0` 上游会报错。读 `total` +
 当前 `page * size` 判断是否还有下一页，需要时翻页；浏览概览时第 1 页通常
-够用。`size` 上限 500（schema 已限制），预览展示建议 20。
+够用。`--size` 上限 500（schema 已限制），预览展示建议 20。
 
 ### 3. 按销售筛选：先反查 user-id 再过滤
 
-不带 `userId` / `userIdList` 就拉**所有人**的录音。要筛某个销售：
+不带 `--user-id` / `--user-id-list` 就拉**所有人**的录音。要筛某个销售：
 
-- 用户能直接给 user-id（数字）→ 用 `userId: <id>`（单个）或
+- 用户能直接给 user-id（数字）→ 用 `--user-id <id>`（单个）或
   `userIdList: [<id1>, <id2>, ...]`（多个）
 - 只知道名字 → 调 **`xiaobao-cli consultant list`**（无参），拿到当前用户
-  授权范围内的所有顾问（含 `userName` / `userId`），按名字 match 后取 `userId`
+  授权范围内的所有顾问（含 `--user-name` / `--user-id`），按名字 match 后取 `--user-id`
   传给 `xiaobao-cli audio list`
 
 > 已弃用做法："先 list_audio 不带 filter，再扫 content[].saleName 反查"——
@@ -109,14 +109,8 @@ list_audio 里 `data` 又是 `PageResult<AudioPageResp>`：
 
 ### 场景 1：列今天所有录音
 
-```jsonc
-// xiaobao-cli audio list
-{
-  "fromDate": "2026-05-12 00:00:00",
-  "toDate":   "2026-05-12 23:59:59",
-  "page": 1,
-  "size": 20
-}
+```bash
+xiaobao-cli audio list --from "2026-05-12 00:00:00" --to "2026-05-12 23:59:59" --page 1 --size 20
 ```
 
 渲染给用户（按 startTime desc，audioId 必须显示——后面取文本要用）：
@@ -134,13 +128,8 @@ list_audio 里 `data` 又是 `PageResult<AudioPageResp>`：
 
 只关心 `total`，第 1 页就够：
 
-```jsonc
-{
-  "fromDate": "2026-05-10 00:00:00",
-  "toDate":   "2026-05-12 00:00:00",
-  "page": 1,
-  "size": 1
-}
+```bash
+xiaobao-cli audio list --from "2026-05-10 00:00:00" --to "2026-05-12 00:00:00" --page 1 --size 1
 ```
 
 回复：「周末两天共 23 条录音，主要集中在周日下午」。
@@ -149,9 +138,8 @@ list_audio 里 `data` 又是 `PageResult<AudioPageResp>`：
 
 用户从场景 1 列表里挑了序号 1（audioId=12345）：
 
-```jsonc
-// xiaobao-cli audio text
-{ "audioId": 12345 }
+```bash
+xiaobao-cli audio text 12345
 ```
 
 渲染：
@@ -172,23 +160,16 @@ audioId 12345 · 张三 · 2026-05-12 10:23:11（12 分钟）
 用户说"张三本周打了几个"——只知道名字：
 
 1. 调 `xiaobao-cli consultant list`（无参）→ 拿到 `[{ userId, userName, ... }, ...]`
-2. 在结果里找 `userName === "张三"` 的 `userId`
-3. 调 `xiaobao-cli audio list` 带 `userId: <张三的 userId>` + 本周时间窗
+2. 在结果里找 `userName === "张三"` 的 `--user-id`
+3. 调 `xiaobao-cli audio list` 带 `--user-id <张三的 userId>` + 本周时间窗
 
-```jsonc
-// step 1
-// xiaobao-cli consultant list
-{}
+```bash
+# step 1: 反查张三的 user-id
+xiaobao-cli consultant list
 
-// step 2 ——找到 张三 的 userId = 100
-// step 3
-// xiaobao-cli audio list
-{
-  "fromDate": "2026-05-06 00:00:00",
-  "toDate":   "2026-05-13 00:00:00",
-  "userId":   100,
-  "page": 1, "size": 20
-}
+# step 2: 假设找到张三的 userId = 100
+# step 3: 用 --user-id 过滤
+xiaobao-cli audio list --from "2026-05-06 00:00:00" --to "2026-05-13 00:00:00" --user-id 100 --page 1 --size 20
 ```
 
 如果 list-consultants 里**找不到张三**——说明当前登录用户没权限看张三
@@ -206,9 +187,9 @@ audioId 12345 · 张三 · 2026-05-12 10:23:11（12 分钟）
   让用户跑 `wangxiaobao-switch-project` skill 确认或重新激活项目。
 - **`error: 'NO_ACTIVE_PROJECT'`** — 还没设过激活项目。让用户跑
   `wangxiaobao-switch-project` skill 后重试本 skill。
-- **翻页拿不到下一页** — 检查 `page` 是不是从 1 开始（不是 0），
+- **翻页拿不到下一页** — 检查 `--page` 是不是从 1 开始（不是 0），
   `page * size > total` 时已经到末页。
-- **`saleName` 是空的** — 上游 user info 缺失，可以只用 `userId` 标识，
+- **`saleName` 是空的** — 上游 user info 缺失，可以只用 `--user-id` 标识，
   跟用户说"该录音的销售信息上游缺失"。
 - **想"批量转文本看看"** — 拦住：批量取文本是 `wangxiaobao-audio-wiki`
   的事（带写文件 + 推游标），本 skill 设计上每次会话最多预览 1-3 条。
