@@ -6,12 +6,20 @@
  * subcommands. See README for full command map.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineCommand, runMain } from 'citty';
+
+// Read package.json at runtime so version stays in sync with the single source
+// of truth (package.json), no manual dual-bump on each release.
+const pkgPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { version: string };
 
 const main = defineCommand({
   meta: {
     name: 'xiaobao-cli',
-    version: '0.1.0',
+    version: pkg.version,
     description:
       '旺小宝 CLI — host-agnostic 14 tools (openclaw-xiaobao plugin 的 CLI 等价物)',
   },

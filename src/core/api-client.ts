@@ -31,8 +31,10 @@ export interface ApiResult {
 
 export class NotAuthenticatedError extends Error {
   code = 'NOT_AUTHENTICATED' as const;
+  hint = '运行 `xiaobao-cli auth login` 完成 OAuth device flow 登录。';
   constructor() {
-    super('No valid token cached. Run `xiaobao-cli auth login` first.');
+    super('当前未登录或 token 已过期');
+    this.name = 'NotAuthenticatedError';
   }
 }
 

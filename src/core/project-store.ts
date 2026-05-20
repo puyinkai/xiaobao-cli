@@ -70,11 +70,12 @@ export async function clearActiveProject(): Promise<void> {
 
 export class NoActiveProjectError extends Error {
   code = 'NO_ACTIVE_PROJECT' as const;
+  hint =
+    '先用 `xiaobao-cli project list [--keyword <kw>]` 查看可选项目，' +
+    '再用 `xiaobao-cli project use --tenant-id ... --tenant-name ... ' +
+    '--project-id ... --project-name ...` 激活。';
   constructor() {
-    super(
-      '当前未设置激活项目。请先运行 `xiaobao-cli project list` 查看可选项目，' +
-        '再用 `xiaobao-cli project use --tenant-id ... --project-id ...` 激活。',
-    );
+    super('当前未设置激活项目');
     this.name = 'NoActiveProjectError';
   }
 }

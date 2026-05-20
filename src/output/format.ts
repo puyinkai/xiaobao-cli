@@ -23,7 +23,7 @@ export function writeResult(data: unknown, format: string | undefined = 'json'):
   process.stdout.write(text + '\n');
 }
 
-/** Print an error structurally to stdout (still parseable) and a hint to stderr. */
+/** Print an error structurally to stdout (still parseable) and human hint to stderr. */
 export function writeError(error: unknown, format: string | undefined = 'json'): void {
   const payload = serializeError(error);
   const fmt = normalize(format);
@@ -31,8 +31,16 @@ export function writeError(error: unknown, format: string | undefined = 'json'):
     fmt === 'toon' ? toonEncode(payload) :
     JSON.stringify(payload, null, 2);
   process.stdout.write(text + '\n');
-  const hint = (payload as { message?: string }).message;
-  if (hint) process.stderr.write(`error: ${hint}\n`);
+  // stderr: structured for humans — error code + message + actionable hint.
+  const err = payload as { error?: string; message?: string; hint?: string };
+  const errCode = err.error;
+  const msg = err.message;
+  if (msg) {
+    process.stderr.write(`error: ${errCode ? `[${errCode}] ` : ''}${msg}\n`);
+  }
+  if (err.hint) {
+    process.stderr.write(`hint:  ${err.hint}\n`);
+  }
 }
 
 function normalize(f: string | undefined): OutputFormat {
@@ -43,7 +51,18 @@ function normalize(f: string | undefined): OutputFormat {
 
 function serializeError(error: unknown): Record<string, unknown> {
   if (error instanceof Error) {
-    return { error: error.name, message: error.message };
+    // Prefer the custom `code` (set by NotAuthenticatedError / NoActiveProjectError)
+    // over the generic `Error` constructor name — gives agents & humans a
+    // semantic error key like "NOT_AUTHENTICATED" instead of "Error".
+    // `hint` (if present) is exposed as a separate field so agents can read
+    // it without parsing the message.
+    const codeAttr = (error as Error & { code?: string }).code;
+    const hint = (error as Error & { hint?: string }).hint;
+    return {
+      error: codeAttr ?? (error.name !== 'Error' ? error.name : 'Error'),
+      message: error.message,
+      ...(hint ? { hint } : {}),
+    };
   }
   if (error && typeof error === 'object') {
     const obj = error as Record<string, unknown>;

@@ -5,5 +5,6 @@ export default defineCommand({
   subCommands: {
     list: () => import('./list').then((m) => m.default),
     use: () => import('./use').then((m) => m.default),
+    current: () => import('./current').then((m) => m.default),
   },
 });
