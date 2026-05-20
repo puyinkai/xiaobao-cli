@@ -10,6 +10,8 @@ metadata:
 
 # 旺小宝录音入库
 
+> **CRITICAL** —— 跑命令前 MUST 先用 Read tool 读取 [`../wangxiaobao-shared/SKILL.md`](../wangxiaobao-shared/SKILL.md)（一份共享文档讲清安装 / 登录 / 选项目 / 错误码 / 输出协议等所有 xiaobao-cli 命令通用的前置约定）。
+
 完整工作流：**登录 → 选项目 → 翻页拉元数据 → 逐条取文本 → 按
 **项目 / 顾问 / 日期 / 录音** 分层写 wiki → 推进游标 → ingest 提炼为
 Layer 2 知识页**。

@@ -10,6 +10,8 @@ metadata:
 
 # 旺小宝客户分页查询
 
+> **CRITICAL** —— 跑命令前 MUST 先用 Read tool 读取 [`../wangxiaobao-shared/SKILL.md`](../wangxiaobao-shared/SKILL.md)（一份共享文档讲清安装 / 登录 / 选项目 / 错误码 / 输出协议等所有 xiaobao-cli 命令通用的前置约定）。
+
 跑 `xiaobao-cli customer list` 查当前激活项目的客户画像列表。
 零副作用，鼓励放心调用。
 

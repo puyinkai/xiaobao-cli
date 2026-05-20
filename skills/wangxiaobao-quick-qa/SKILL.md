@@ -10,6 +10,8 @@ metadata:
 
 # 旺小宝问数
 
+> **CRITICAL** —— 跑命令前 MUST 先用 Read tool 读取 [`../wangxiaobao-shared/SKILL.md`](../wangxiaobao-shared/SKILL.md)（一份共享文档讲清安装 / 登录 / 选项目 / 错误码 / 输出协议等所有 xiaobao-cli 命令通用的前置约定）。
+
 跑 `xiaobao-cli qa` 用自然语言问当前激活项目的业务数据。
 零副作用，不写文件、不动 wiki，所以用错也没成本，鼓励放心调用。
 

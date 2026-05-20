@@ -10,6 +10,8 @@ metadata:
 
 # 旺小宝项目切换
 
+> **CRITICAL** —— 跑命令前 MUST 先用 Read tool 读取 [`../wangxiaobao-shared/SKILL.md`](../wangxiaobao-shared/SKILL.md)（一份共享文档讲清安装 / 登录 / 选项目 / 错误码 / 输出协议等所有 xiaobao-cli 命令通用的前置约定）。
+
 把当前账号下的「租户 + 项目」枚举出来让用户挑一个，确认后调
 `xiaobao-cli project use` 写入 CLI 全局状态文件，供后续 命令 读取。
 

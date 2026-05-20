@@ -10,6 +10,8 @@ metadata:
 
 # 旺小宝客户抗性点查询
 
+> **CRITICAL** —— 跑命令前 MUST 先用 Read tool 读取 [`../wangxiaobao-shared/SKILL.md`](../wangxiaobao-shared/SKILL.md)（一份共享文档讲清安装 / 登录 / 选项目 / 错误码 / 输出协议等所有 xiaobao-cli 命令通用的前置约定）。
+
 跑 `xiaobao-cli resistance list` 查 AI 抽出的客户抗性点标签。
 跟关注点 skill 镜像，差别就是底层走 `mv_open_customer_resistance` 表 ——
 **抗性 = 客户疑虑 / 反对 / 不满**（关注 = 客户主动表达的关心）。
