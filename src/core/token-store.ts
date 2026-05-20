@@ -83,14 +83,20 @@ export async function writeToken(resp: TokenResponse): Promise<StoredToken> {
 }
 
 /**
- * Only deletes the primary file. Legacy openclaw path is left intact so a
- * `xiaobao-cli auth logout` doesn't silently nuke the plugin's token.
+ * Clears both the primary file AND the legacy openclaw fallback path. After
+ * `xiaobao-cli auth logout` the user expects to be fully logged out across all
+ * known token locations — leaving the legacy file behind would cause
+ * `auth whoami` to read it back via fallback and report `logged_in: true`,
+ * confusing users ("logout 没用"). The refresh_token is best-effort revoked
+ * server-side before this call, so the legacy file is already a dead token.
  */
 export async function clearToken(): Promise<void> {
-  try {
-    await unlink(PRIMARY_TOKEN_FILE);
-  } catch (e: unknown) {
-    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+  for (const f of [PRIMARY_TOKEN_FILE, LEGACY_TOKEN_FILE]) {
+    try {
+      await unlink(f);
+    } catch (e: unknown) {
+      if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+    }
   }
 }
 

@@ -1,8 +1,10 @@
 /**
  * `xiaobao-cli auth logout` — clear local token + best-effort revoke remote
- * refresh_token. Only touches the primary path (~/.xiaobao/token.json) —
- * legacy ~/.openclaw/state/wangxiaobao/token.json is left intact so this
- * doesn't silently nuke the plugin's session.
+ * refresh_token. Clears BOTH ~/.xiaobao/token.json and the legacy fallback
+ * ~/.openclaw/state/wangxiaobao/token.json — otherwise `auth whoami` would
+ * read the legacy file via fallback and report logged_in true even after
+ * logout. The refresh_token is revoked server-side first so the legacy file
+ * is already a dead token by the time it's unlinked.
  */
 
 import { defineCommand } from 'citty';
@@ -31,8 +33,7 @@ export default defineCommand({
           message: 'Logged out',
           remote_revoked: revoked,
           note:
-            'Only ~/.xiaobao/token.json was cleared. Legacy ' +
-            '~/.openclaw/state/wangxiaobao/token.json (if present) was left intact.',
+            'Cleared ~/.xiaobao/token.json and legacy ~/.openclaw/state/wangxiaobao/token.json (if existed).',
         },
         args.format,
       );
