@@ -1,14 +1,11 @@
 ---
 name: wangxiaobao-audio-query
-description: |
-  旺小宝录音只读查询技能。按时间 / 销售 / 翻页查询录音元数据列表，可选地抽样取单条转录文本预览。**不写文件、不动游标**——是 `wangxiaobao-audio-wiki` 的"探查 / 抽样"版。
-
-  **当以下情况时使用此 Skill**:
-  (1) 用户提到"看看有哪些录音"、"查录音"、"列录音"、"哪些销售有几条录音"、"录音多不多"
-  (2) 用户想抽样几条录音文本预览，但不想批量入库
-  (3) 用户在 sync 之前想估个量、看一下数据形状
-  (4) 用户问"张三/某销售本周打了几个电话"、"上周末有几条客户对话"
-  (5) 任何"看一眼录音"而**不**触发"同步 / 入库 / 归档"意图的场景
+version: 0.1.0
+description: "旺小宝录音只读查询：按时间窗 + 可选顾问过滤分页查录音元数据列表（audioId / fileId / startTime / duration / 销售 / 签名 fileUrl），或按 audioId 查单条转录文本（含 talkRatios 说话人占比 + texts 分段 ASR）。不写文件、不动游标，是 wangxiaobao-audio-wiki 的探查/抽样版。高频命令: xiaobao-cli audio list --from --to [--user-id <id>] [--user-id-list a,b,c] [--page N] [--size N]、xiaobao-cli audio text <audio-id>。何时用：用户说看看有哪些录音/查录音/列录音/某销售本周打了几个电话/抽样几条录音文本预览/估个量/看一眼录音；任何看一眼录音而不触发同步入库归档意图的场景。"
+metadata:
+  requires:
+    bins: ["xiaobao-cli"]
+  cliHelp: "xiaobao-cli audio --help"
 ---
 
 > **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH

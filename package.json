@@ -1,6 +1,6 @@
 {
   "name": "@puyinkai/xiaobao-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "旺小宝 CLI — host-agnostic 14 tools (openclaw-xiaobao plugin 的 CLI 等价物)",
   "type": "module",
   "bin": {

@@ -1,14 +1,11 @@
 ---
 name: wangxiaobao-audio-wiki
-description: |
-  旺小宝录音入库技能。把指定时间窗口的录音同步到本地，按 **项目/顾问/日期/录音** 四层目录归档到 llm-wiki 知识库（`wiki/projects/{projectId}-{projectName}/raw/audio/...`），并引导后续 ingest 阶段提炼出 **顾问画像 / 客户 / 话题 / 话术** 四类 Layer 2 知识页。每个旺小宝项目对应一个独立 wiki 目录，切项目不串味。一站式工作流：sync 阶段拉数据写 raw/，ingest 阶段提炼为可检索的销售知识。
-
-  **当以下情况时使用此 Skill**:
-  (1) 用户提到"拉录音"、"同步录音"、"旺小宝录音"、"音频归档"、"录音入库"、"建录音知识库"
-  (2) 用户希望把旺小宝的录音长期沉淀成可检索的销售知识 wiki
-  (3) 用户给定了时间范围或希望"从上次同步到现在"继续拉取
-  (4) 用户想为某位置业顾问建立画像、统计客户跟进、整理话术
-  (5) 用户在 query skill 看完一眼后想"完整存下来 + 提炼成知识"
+version: 0.1.0
+description: "旺小宝录音入库：把指定时间窗的录音同步到本地，按 项目/顾问/日期/录音 四层目录归档到 llm-wiki 知识库（wiki/projects/{projectId}-{projectName}/raw/audio/...），再 ingest 提炼为 顾问画像 / 客户 / 话题 / 话术 四类 Layer 2 知识页。每个旺小宝项目对应一个独立 wiki 目录不串味；一站式 sync→ingest 工作流。底层依赖: xiaobao-cli audio list 拉元数据 + xiaobao-cli audio text 拉文本，配合 Read/Write 工具落盘 + 维护 .cursor 增量游标。何时用：用户说拉录音/同步录音/旺小宝录音/音频归档/录音入库/建录音知识库；要为某位置业顾问建立画像、统计客户跟进、整理话术；要把旺小宝录音长期沉淀成可检索的销售知识 wiki。"
+metadata:
+  requires:
+    bins: ["xiaobao-cli"]
+  cliHelp: "xiaobao-cli audio --help"
 ---
 
 > **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH

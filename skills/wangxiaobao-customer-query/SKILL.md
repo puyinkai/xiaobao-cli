@@ -1,24 +1,11 @@
 ---
 name: wangxiaobao-customer-query
-description: |
-  旺小宝客户分页查询 skill：按 **置业顾问 / 客户姓名 / 手机号 / 画像关键词 /
-  最后来访时间** 维度分页查当前激活项目里的客户列表。**只读、不写文件、无副作用**。
-  对应 `xiaobao_list_customers` tool。排序固定 last_visit_time DESC。
-
-  **当以下情况时使用此 Skill**:
-  (1) 用户问"客户列表"、"我的客户"、"高意向客户"、"近期来访客户"
-  (2) 用户问"张三名下的客户"、"陈平这周新增了哪些客户"——先调
-      `xiaobao_list_consultants` 反查顾问 user-id，再调本 skill 带 userId 过滤
-  (3) 用户按客户画像找——"高意向客户"、"价格敏感客户"、"看四房的客户"，用
-      `portrait` 关键词
-  (4) 用户问"姓张的客户"、"手机号 138 的客户"——客户姓名 / 手机号 LIKE 模糊
-  (5) 用户问"5 月份来过的客户"、"上周访客"——`fromDate` / `toDate` 时间窗
-  (6) 任何"看客户名单 / 客户画像"的开放式查询，**不写文件 / 不出报告**
-
-  **不要用本 skill 的场景**：
-  - 用户要的是来访 / 接待记录（"今天来了几组"）→ 走 `wangxiaobao-visit-query`
-  - 用户问录音元数据 / 文本 → 走 `wangxiaobao-audio-query`
-  - 用户要"出报告 / 落 wiki" → 本期不支持
+version: 0.1.0
+description: "旺小宝客户画像分页查询：按 置业顾问 / 客户姓名 / 手机号 / 画像关键词（dynamic_tags JSON LIKE） / 最后来访时间窗 维度过滤，排序固定 last_visit_time DESC。只读、不写文件、无副作用。高频命令: xiaobao-cli customer list [--user-id <id>] [--user-name <n>] [--customer-name <n>] [--customer-phone <p>] [--portrait <kw>] [--from <date>] [--to <date>] [--page N] [--size N]。何时用：用户问客户列表/我的客户/高意向客户/近期来访客户/某顾问名下的客户/某顾问这周新增哪些客户/姓张的客户/手机号 138 的客户/5 月份来过的客户；按画像找如高意向/价格敏感/看四房用 --portrait。注：顾问名→user-id 先用 xiaobao-cli consultant list 反查；要来访记录走 visit-query；要录音元数据走 audio-query。"
+metadata:
+  requires:
+    bins: ["xiaobao-cli"]
+  cliHelp: "xiaobao-cli customer --help"
 ---
 
 > **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH

@@ -1,26 +1,11 @@
 ---
 name: wangxiaobao-visit-query
-description: |
-  旺小宝来访分页查询 skill：按 **客户 ID / 客户姓名 / 来访时间** 分页查
-  来访记录（含接待顾问 / **录音列表 audios** / 盘客状态 / 话术命中等）。
-  **只读、不写文件、无副作用**。对应 `xiaobao_list_visits` tool。
-  排序固定 visit_time DESC。每条 visit 已直接带录音列表，问"这次来访打了
-  几条录音 / 录音多长"时**不必再调** `xiaobao_list_audio`。
-
-  **当以下情况时使用此 Skill**:
-  (1) 用户问"今天到访"、"本周来访列表"、"最近来访"
-  (2) 用户问"李女士最近几次来访"——**先调 `xiaobao_list_customers` 反查
-      customerId（wang_id），再调本 skill 带 customerId 精确过滤**（更准）
-  (3) 用户问"上周哪些客户来访"——`fromDate` / `toDate` 时间窗
-  (4) 用户问"姓张的客户什么时候来过"——`customerName` 模糊（后端 JOIN 客户表）
-  (5) 用户问"某次到访打了几条录音 / 录音多长 / 录音 fileUrl"——看
-      `audioCount` + `audios[]`（直接包含录音元数据 + 签名 URL）；
-      "盘客完成没"——看 `isPankeCompleted` / `pankeStatus`
-  (6) 任何"看到访名单 / 接待记录 / 话术命中"的开放式查询
-
-  **不要用本 skill 的场景**：
-  - 用户要的是客户**画像** / 标签 → 走 `wangxiaobao-customer-query`
-  - 用户问录音元数据 / 文本 → 走 `wangxiaobao-audio-query`
+version: 0.1.0
+description: "旺小宝客户来访分页查询：按 客户 ID / 客户姓名（模糊触发后端 JOIN）/ 来访时间窗 过滤，排序固定 visit_time DESC。每条 visit 直接带 audios 录音列表（含 audioId / fileId / startTime / duration / 签名 fileUrl），问这次来访打了几条录音 / 录音多长 / fileUrl 时不必再调 audio list。只读、不写文件、无副作用。高频命令: xiaobao-cli visit list [--customer-id <id>] [--customer-name <n>] [--from <date>] [--to <date>] [--page N] [--size N]。何时用：用户问今天到访/本周来访列表/最近来访/某客户最近几次来访/上周哪些客户来访/姓张客户什么时候来过/某次到访打了几条录音/录音 fileUrl/盘客完成没；任何看到访名单/接待记录/话术命中的开放式查询。注：customer-id 比 customer-name 精确，先用 xiaobao-cli customer list 反查 wang_id；要客户画像走 customer-query；要录音元数据走 audio-query。"
+metadata:
+  requires:
+    bins: ["xiaobao-cli"]
+  cliHelp: "xiaobao-cli visit --help"
 ---
 
 > **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH

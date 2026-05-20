@@ -1,25 +1,11 @@
 ---
 name: wangxiaobao-customer-focus-query
-description: |
-  旺小宝**客户关注点**分页查询 skill：按 visit/customer/audio ID 列表、一级/二级
-  分类模糊、来访时间窗组合查 AI 在客户对话里抽出的「关注点」标签
-  （客户主动表达的关心：学区 / 户型 / 价格优惠 / 配套等）。**只读、不写文件、
-  无副作用**。对应 `xiaobao_list_customer_focus` tool。排序固定 visit_time DESC。
-  每条 tag 含 customer / userInfo / audio + value_str（详细说明） + text_fragment（录音原文片段）。
-
-  **当以下情况时使用此 Skill**:
-  (1) 用户问"客户关注点"、"客户最在意什么"、"客户关心什么"、"客户问得最多"
-  (2) 用户问某客户的关注点 —— 先调 `xiaobao_list_customers` 反查 customerId，
-      再调本 skill 带 customerIds 精确过滤
-  (3) 用户问某次到访 / 某条录音里的关注点 —— 带 visitIds / audioIds
-  (4) 用户按分类找 —— 户型 / 价格 / 学区 / 交通 / 商业配套 等 → category 模糊
-  (5) 用户按二级分类找 —— "户型因素" / "位置因素" / "发展因素" → classification 模糊
-  (6) 用户给时间窗 —— "5 月份的关注点" / "本周关注点" → fromDate / toDate
-
-  **不要用本 skill 的场景**：
-  - 用户问的是**抗性点 / 疑虑 / 反对意见** → 走 `wangxiaobao-customer-resistance-query`
-  - 用户要的是客户**画像** / 标签 → 走 `wangxiaobao-customer-query`
-  - 用户问"完整录音文本" → 走 `wangxiaobao-audio-query` + `xiaobao_get_audio_text`
+version: 0.1.0
+description: "旺小宝客户关注点（focus）分页查询 —— AI 在客户对话里抽出的客户主动表达的关心标签（学区 / 户型 / 价格优惠 / 配套等）。按 visit/customer/audio ID 列表（IN） + 一级分类（category LIKE） + 二级分类（classification LIKE） + 来访时间窗组合过滤，排序固定 visit_time DESC。每条 tag 已带 customer + userInfo + audio + value_str（详细说明） + text_fragment（录音原文片段）。只读、不写文件。高频命令: xiaobao-cli focus list [--visit-ids a,b] [--customer-ids a,b] [--audio-ids a,b] [--category <kw>] [--classification <kw>] [--from <date>] [--to <date>] [--page N] [--size N]。何时用：用户问客户关注点/客户最在意什么/客户关心什么/客户问得最多/某客户的关注点/某次到访或某条录音里的关注点/户型 价格 学区 交通 商业配套类关注点/5 月份的关注点。注：客户名→wang_id 先用 xiaobao-cli customer list 反查；问抗性/疑虑/反对走 resistance-query；问完整录音文本走 audio-query。"
+metadata:
+  requires:
+    bins: ["xiaobao-cli"]
+  cliHelp: "xiaobao-cli focus --help"
 ---
 
 > **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH

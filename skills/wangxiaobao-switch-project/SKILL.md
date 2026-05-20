@@ -1,19 +1,11 @@
 ---
 name: wangxiaobao-switch-project
-description: |
-  查询和切换旺小宝项目。展开当前账号下所有租户与项目，让用户选择，然后调
-  `xiaobao_switch_project` tool 把选中条目持久化到 plugin 全局激活项目状态文件
-  `~/.openclaw/state/wangxiaobao/active-project.json`（权限 0600）。后续所有
-  需要 tenant/project 上下文的 tool（list-audio / quick-qa 等）
-  都从这个文件读取，**不再需要传 tenantId/projectId 入参**。
-
-  **当以下情况时使用此 Skill**:
-  (1) 用户提到"切换项目"、"选项目"、"换项目"、"项目列表"、"选择租户和项目"
-  (2) 任意 tool 返回 `error: 'NO_ACTIVE_PROJECT'` —— 这是 plugin 的标准
-      未激活信号，要求重新走切换项目流程
-  (3) 用户准备同步录音 / 出报告 / 调旺小宝租户隔离 API，但还没设置过激活项目
-  (4) 用户想看自己有权限访问哪些租户和项目
-  (5) 用户直接点名某个项目（"切到XX项目"）—— 带 keyword 精确收敛后再确认
+version: 0.1.0
+description: "旺小宝多租户/项目切换。列出当前账号有权限的租户与项目（可按 keyword 模糊过滤收敛），让用户选择后激活到 ~/.xiaobao/active-project.json（0600）；后续所有 xiaobao-cli 命令从该文件读 tenant/project 上下文，不再需要传 tenantId/projectId 入参。高频命令: xiaobao-cli project list [--keyword <kw>]、xiaobao-cli project use --tenant-id ... --tenant-name ... --project-id ... --project-name ...。何时用：用户说切项目/选项目/换项目/项目列表/切到 XX 项目；任意 xiaobao-cli 命令返回 NO_ACTIVE_PROJECT 错误；用户准备查录音/客户/来访但还没设激活项目；用户想看自己有权限访问哪些租户和项目。"
+metadata:
+  requires:
+    bins: ["xiaobao-cli"]
+  cliHelp: "xiaobao-cli project --help"
 ---
 
 > **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH

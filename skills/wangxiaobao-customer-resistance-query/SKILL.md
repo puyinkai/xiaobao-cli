@@ -1,27 +1,11 @@
 ---
 name: wangxiaobao-customer-resistance-query
-description: |
-  旺小宝**客户抗性点**分页查询 skill：按 visit/customer/audio ID 列表、一级/二级
-  分类模糊、来访时间窗组合查 AI 在客户对话里抽出的「抗性点」标签
-  （客户疑虑 / 反对 / 不满：价格高 / 户型差 / 地段差 / 装修不满 等）。
-  **只读、不写文件、无副作用**。对应 `xiaobao_list_customer_resistance` tool。
-  排序固定 visit_time DESC。每条 tag 含 customer / userInfo / audio +
-  value_str（详细说明） + text_fragment（录音原文片段）。
-
-  **当以下情况时使用此 Skill**:
-  (1) 用户问"客户抗性点"、"客户疑虑"、"客户反对"、"客户嫌"、"客户担心"、"不满意"
-  (2) 用户问某客户的抗性 —— 先调 `xiaobao_list_customers` 反查 customerId，
-      再调本 skill 带 customerIds 精确过滤
-  (3) 用户问某次到访 / 某条录音里的抗性 —— 带 visitIds / audioIds
-  (4) 用户按分类找 —— 价格抗性 / 户型抗性 / 地段抗性 等 → category 模糊
-  (5) 用户按二级分类找 —— "价格因素" / "位置因素" → classification 模糊
-  (6) 用户给时间窗 —— "5 月份的抗性" / "本周抗性" → fromDate / toDate
-  (7) 想看 **TOP 抗性原因** / 销售应该重点准备哪些应对话术
-
-  **不要用本 skill 的场景**：
-  - 用户问的是**关注点 / 兴趣点 / 客户偏好** → 走 `wangxiaobao-customer-focus-query`
-  - 用户要的是客户**画像** / 标签 → 走 `wangxiaobao-customer-query`
-  - 用户问"完整录音文本" → 走 `wangxiaobao-audio-query` + `xiaobao_get_audio_text`
+version: 0.1.0
+description: "旺小宝客户抗性点（resistance）分页查询 —— AI 在客户对话里抽出的客户疑虑 / 反对 / 不满标签（价格高 / 户型差 / 地段差 / 装修不满 等）。schema 与 focus 镜像，仅底层 MV 表不同。按 visit/customer/audio ID 列表 + 一级/二级分类模糊 + 来访时间窗组合过滤，排序固定 visit_time DESC。每条 tag 带 customer + userInfo + audio + value_str + text_fragment。只读、不写文件。高频命令: xiaobao-cli resistance list [--visit-ids a,b] [--customer-ids a,b] [--audio-ids a,b] [--category <kw>] [--classification <kw>] [--from <date>] [--to <date>] [--page N] [--size N]。何时用：用户问客户抗性/客户疑虑/客户反对/客户嫌/客户担心/不满意/价格抗性/户型抗性/地段抗性/TOP 抗性原因/销售应对话术；用户想看销售应该重点准备哪些应对话术。注：客户名→wang_id 先用 xiaobao-cli customer list 反查；问关注/兴趣/偏好走 focus-query；问完整录音文本走 audio-query。"
+metadata:
+  requires:
+    bins: ["xiaobao-cli"]
+  cliHelp: "xiaobao-cli resistance --help"
 ---
 
 > **Host-agnostic CLI skill** — 本 skill 假设 `xiaobao-cli` 已装到 PATH
