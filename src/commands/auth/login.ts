@@ -166,12 +166,13 @@ export default defineCommand({
           {
             awaiting_authorization: true,
             verification_uri: verificationUri,
+            verification_link: `[点击完成旺小宝登录授权](${verificationUri})`,
             user_code: init.user_code,
             expires_in: init.expires_in,
             interval,
             message:
-              '请在浏览器打开 verification_uri 完成授权，然后跑 ' +
-              '`xiaobao-cli auth login --resume` 完成登录。' +
+              '把 verification_link（markdown 可点击链接）原样发给用户点击授权，' +
+              '授权完成后跑 `xiaobao-cli auth login --resume` 完成登录。' +
               'device_code 已安全保存在本地，无需手动传。',
           },
           fmt,

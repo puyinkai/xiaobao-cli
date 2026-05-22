@@ -53,13 +53,15 @@ xiaobao-cli customer list --portrait 高意向
 # 步骤 A：发起，立即返回（约 0.5s），拿到 verification_uri
 xiaobao-cli auth login --no-wait
 # stdout: { "awaiting_authorization": true, "verification_uri": "...",
+#           "verification_link": "[点击完成旺小宝登录授权](https://...)",
 #           "user_code": "...", "expires_in": 300, "interval": 5, ... }
 # device_code 不在 stdout —— 已安全存到 ~/.xiaobao/pending-auth.json（0600）
 ```
 
-agent 拿到后：把 `verification_uri` **原样**发给用户（放进只含 URL 的代码块，
-不要改写不要做 URL 编码），让用户浏览器打开授权，然后**结束本轮**，把控制权
-交还用户。
+agent 拿到后：把 stdout 里的 `verification_link` 字段**原样**发给用户 —— 它
+已经是 markdown 可点击链接 `[点击完成旺小宝登录授权](https://...)`，直接粘进
+回复正文（**不要**放进代码块 —— 代码块里链接不可点击），用户点一下即可在浏览器
+打开授权。**不要**改写链接、不要做 URL 编码。发完**结束本轮**，把控制权交还用户。
 
 ```bash
 # 步骤 B：用户回复"授权完成"后，直接换 token（秒级）——
