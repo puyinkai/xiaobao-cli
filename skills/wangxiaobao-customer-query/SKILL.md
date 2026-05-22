@@ -17,7 +17,7 @@ metadata:
 
 ## 执行前必读
 
-- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录就 `xiaobao-cli auth login`
+- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录就走 `auth login --no-wait` split-flow（见 wangxiaobao-shared）
 - **必须有激活项目**：命令内部自动读，如果返回 `NO_ACTIVE_PROJECT` 就跑
   `wangxiaobao-switch-project` skill
 - **数据权限隔离**：后端按"当前用户授权可见的顾问范围"过滤（普通顾问看自己 /
@@ -158,7 +158,7 @@ xiaobao-cli customer list --page 1 --size 1
 ## 常见错误与排查
 
 - **`error: 'NO_ACTIVE_PROJECT'`** — 跑 `wangxiaobao-switch-project` skill
-- **401 / token 过期** — 调 `xiaobao-cli auth login --force` 重登
+- **401 / token 过期** — 走 `auth login --no-wait --force` split-flow 重登
 - **`total: 0`** — 时间窗口 / 过滤条件没匹配到，**或**当前用户授权范围为空
   （新人顾问刚入职 / 团队成员被移走等）
 - **顾问名找不到** — 不在当前用户授权可见范围内；不要硬调 list_customers 试

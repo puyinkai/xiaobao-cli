@@ -17,7 +17,7 @@ metadata:
 
 ## 执行前必读
 
-- 必须有有效 token：先调 `xiaobao-cli auth whoami`，未登录 / 过期就调 `xiaobao-cli auth login`
+- 必须有有效 token：先调 `xiaobao-cli auth whoami`，未登录 / 过期就走 `auth login --no-wait` split-flow（见 wangxiaobao-shared）
 - **必须有激活项目**：tenant/project 由 命令内部从
   `~/.xiaobao/active-project.json` 读，调用方不需要传任何
   tenant/project 参数。如果 命令 返回 `error: 'NO_ACTIVE_PROJECT'`，
@@ -184,7 +184,7 @@ xiaobao-cli audio list --from "2026-05-06 00:00:00" --to "2026-05-13 00:00:00" -
 
 - **`code: "400"` / `msg: "消息转换异常"`** — fromDate/toDate 格式不对。
   必须 `yyyy-MM-dd HH:mm:ss` 空格分隔，不带时区。
-- **401 / token 过期** — 调 `xiaobao-cli auth login --force` 重登，重试一次。
+- **401 / token 过期** — 走 `auth login --no-wait --force` split-flow 重登，重试一次。
 - **`total: 0`** — 时间窗口里确实没数据，或激活的租户/项目错了。
   让用户跑 `wangxiaobao-switch-project` skill 确认或重新激活项目。
 - **`error: 'NO_ACTIVE_PROJECT'`** — 还没设过激活项目。让用户跑

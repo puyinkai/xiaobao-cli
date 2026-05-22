@@ -17,7 +17,7 @@ metadata:
 
 ## 执行前必读
 
-- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录 / 过期就调 `xiaobao-cli auth login`
+- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录 / 过期就走 `auth login --no-wait` split-flow（见 wangxiaobao-shared）
 - **必须有激活项目**：命令内部自动从激活项目状态读 tenant/project，
   调用方**不要传** tenant/project 参数。如果 命令 返回
   `error: 'NO_ACTIVE_PROJECT'`，让用户跑 `wangxiaobao-switch-project` skill
@@ -178,7 +178,7 @@ xiaobao-cli qa "评估一下客户 12345 的成交概率，相关录音 audioId:
 
 - **`error: 'NO_ACTIVE_PROJECT'`** — 还没设过激活项目 → 跑
   `wangxiaobao-switch-project` skill 后重试
-- **401 / token 过期** — 调 `xiaobao-cli auth login --force` 重登，重试一次
+- **401 / token 过期** — 走 `auth login --no-wait --force` split-flow 重登，重试一次
 - **响应耗时 > 30 分钟** — 后端慢到打满 CLI timeout → 告诉用户"上游慢，稍后重试"
 - **answer 为空** — 上游这一轮没产出最终文本 → 让用户换个 prompt 重试
 - **用户想"批量出报告"** — 拦住：本期 CLI 没有报告生成 skill，

@@ -118,12 +118,12 @@ Agent 消费时**只 parse stdout JSON**，stderr 是辅助。
 
 ### 常见错误码
 
-| code | 触发场景 | hint 内 actionable 命令 |
-| --- | --- | --- |
-| `NOT_AUTHENTICATED` | 未登录 / token 过期且 refresh_token 也失效 | `xiaobao-cli auth login` |
-| `NO_ACTIVE_PROJECT` | 没设激活项目就跑了需要 tenant/project 的命令 | `xiaobao-cli project list` + `xiaobao-cli project use ...` |
+| code | 触发场景 | hint 内 actionable 命令                                          |
+| --- | --- |---------------------------------------------------------------|
+| `NOT_AUTHENTICATED` | 未登录 / token 过期且 refresh_token 也失效 | `xiaobao-cli auth login --no-wait`（split-flow，见上方登录段） |
+| `NO_ACTIVE_PROJECT` | 没设激活项目就跑了需要 tenant/project 的命令 | `xiaobao-cli project list` + `xiaobao-cli project use ...`    |
 | `API_ERROR` | 上游 ai-open / saas API 返非 2xx | 看 `details.status` 和 `details.body`，可能 token scope 不够 / 上游临时挂 |
-| `BAD_METHOD` | `api` 命令传错 HTTP method | 用 GET / POST / PUT / PATCH / DELETE |
+| `BAD_METHOD` | `api` 命令传错 HTTP method | 用 GET / POST / PUT / PATCH / DELETE                           |
 
 遇到 `NOT_AUTHENTICATED` 或 `NO_ACTIVE_PROJECT` 时**立即按 hint 走**，不要追问用户。
 

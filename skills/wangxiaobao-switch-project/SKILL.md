@@ -17,7 +17,7 @@ metadata:
 
 ## 执行前必读
 
-- 必须先通过 `xiaobao-cli auth login` 完成 OAuth 登录；token 没拿到时本 skill 不能继续
+- 必须先走 `auth login --no-wait` split-flow 完成 OAuth 登录（见 wangxiaobao-shared）；token 没拿到时本 skill 不能继续
 - **不要**自己 fs.writeFile 写 `.env` 或任何文件——状态落地走
   `xiaobao-cli project use`，由 CLI 统一管理权限和路径
 - 多个项目时**必须让用户挑**，绝对不要自动选择第一个；只有一个项目时才可以自动选
@@ -58,7 +58,7 @@ metadata:
   或不带 keyword 看全量；**不要**直接说"没有项目"
 - **没带 `--keyword`** → 账号确实没有可访问的项目，结束
 
-如果 命令 报错（401 / token 过期等），先调 `xiaobao-cli auth login --force` 重新登录，再重试一次。
+如果 命令 报错（401 / token 过期等），先走 `auth login --no-wait --force` split-flow 重新登录，再重试一次。
 
 ### 第 2 步：展示并让用户选
 
@@ -146,7 +146,7 @@ tenant/project + `updatedAt`。如果用户问"现在是哪个项目""当前激�
 
 | 错误现象 | 根本原因 | 解决方案 |
 |---|---|---|
-| `xiaobao-cli project list` 返回 401 / token 过期 | 没登录或 refresh 失败 | 调 `xiaobao-cli auth login --force` 重新走 device flow |
+| `xiaobao-cli project list` 返回 401 / token 过期 | 没登录或 refresh 失败 | 走 `auth login --no-wait --force` split-flow 重登 |
 | `count == 0`（没带 keyword） | 账号无任何租户/项目权限 | 让用户找管理员加权限，本 skill 不继续 |
 | `count == 0`（带了 keyword） | 关键字没匹配到任何项目 | 换更短关键字 / 不带 keyword 看全量，别直接说"没项目" |
 | 用户输入的编号超出范围 | 选错了 | 重新提示当前可选编号区间 |

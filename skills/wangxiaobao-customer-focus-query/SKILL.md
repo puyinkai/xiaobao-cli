@@ -17,7 +17,7 @@ metadata:
 
 ## 执行前必读
 
-- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录就 `xiaobao-cli auth login`
+- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录就走 `auth login --no-wait` split-flow（见 wangxiaobao-shared）
 - **必须有激活项目**：命令内部自动读，缺失返回 `NO_ACTIVE_PROJECT`
 - **数据权限隔离**：按当前用户授权可见顾问范围过滤（普通顾问看自己 /
   团队长看团队 / 项目管理员看全项目）
@@ -156,7 +156,7 @@ xiaobao-cli focus list --audio-ids 507494047338729472 --page 1 --size 50
 ## 常见错误与排查
 
 - **`error: 'NO_ACTIVE_PROJECT'`** — 跑 `wangxiaobao-switch-project` skill
-- **401 / token 过期** — 调 `xiaobao-cli auth login --force` 重登
+- **401 / token 过期** — 走 `auth login --no-wait --force` split-flow 重登
 - **`total: 0`** — 过滤条件没匹配 / 该时段没数据 / 当前用户授权范围内没匹配的接待顾问
 - **传入的 ID 找不到对应数据** — 数据权限隔离把不属于授权顾问的 tag 过滤掉了；
   这是预期行为，不是 bug

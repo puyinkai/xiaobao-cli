@@ -25,7 +25,7 @@ Layer 2 知识页**。
 
 ## 执行前必读
 
-1. **登录**：先调 `xiaobao-cli auth whoami`；未登录 / 过期就调 `xiaobao-cli auth login`。
+1. **登录**：先调 `xiaobao-cli auth whoami`；未登录 / 过期就走 `auth login --no-wait` split-flow（见 wangxiaobao-shared）。
 2. **激活项目**：命令内部从 `~/.xiaobao/active-project.json`
    读 tenant/project。如果任何 命令 返回 `error: 'NO_ACTIVE_PROJECT'`，
    先走 `wangxiaobao-switch-project` skill 让用户选。
@@ -84,7 +84,7 @@ for each window [winStart, winEnd):
     否则 page += 1
 ```
 
-若 命令 返回 401 → 调 `xiaobao-cli auth login --force` 后重试当前窗口
+若 命令 返回 401 → 走 `auth login --no-wait --force` split-flow 重登后重试当前窗口
 （最多重试一次）。
 
 ### 第 3 步：逐条取文本
@@ -243,7 +243,7 @@ wiki/projects/{projectId}-{projectName}/
 ## 完整链路
 
 ```
-1. xiaobao-cli auth login             — 拿到 token
+1. xiaobao-cli auth login --no-wait → --resume   — 拿到 token
 2. wangxiaobao-switch-project    — 选好租户/项目，写 ~/.xiaobao/active-project.json
 3. 本 skill - sync 阶段          — 翻页拉 → 逐条取文本 → 按 顾问/日期 写 raw → 推进游标
 4. 本 skill - ingest 阶段         — 读 raw/ → 提炼 4 层 Layer 2 知识页 → 更新 index/log
@@ -271,7 +271,7 @@ wiki/projects/{projectId}-{projectName}/
 
 ## 常见错误与排查
 
-- **`xiaobao-cli audio list` 返回 401** — token 过期 → `xiaobao-cli auth login --force` 重登
+- **`xiaobao-cli audio list` 返回 401** — token 过期 → 走 `auth login --no-wait --force` split-flow 重登
 - **`xiaobao-cli audio text` 返回 `data: null` / `texts: []`** — 转录未就绪 / 录音异常 → 跳过该条
 - **page 翻不动 / 重复返回同一页** — 检查 page 是否从 1 开始；`total = 0` 直接结束窗口
 - **fromDate/toDate 报参数错** — 用空格分隔的 `yyyy-MM-dd HH:mm:ss`，不带时区

@@ -16,7 +16,7 @@ metadata:
 
 ## 执行前必读
 
-- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录就 `xiaobao-cli auth login`
+- 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录就走 `auth login --no-wait` split-flow（见 wangxiaobao-shared）
 - **必须有激活项目**：命令内部自动读，缺失返回 `NO_ACTIVE_PROJECT`
 - **数据权限隔离**：跟客户接口一样，按当前用户授权可见顾问范围过滤
 - LocalDateTime 格式：`yyyy-MM-dd HH:mm:ss`（空格分隔），CLI 自动转
@@ -194,7 +194,7 @@ xiaobao-cli visit list --customer-id 1685535452481236993 --page 1 --size 5
 ## 常见错误与排查
 
 - **`error: 'NO_ACTIVE_PROJECT'`** — 跑 `wangxiaobao-switch-project` skill
-- **401 / token 过期** — 调 `xiaobao-cli auth login --force` 重登
+- **401 / token 过期** — 走 `auth login --no-wait --force` split-flow 重登
 - **`total: 0`** — 时间窗内确实没数据，或当前用户授权范围内没有匹配的接待顾问
 - **customerName 模糊但没匹到** — 客户名拼写差异（"李女士" vs "李小姐"）；
   改用 `xiaobao-cli customer list` 反查精确 customerId

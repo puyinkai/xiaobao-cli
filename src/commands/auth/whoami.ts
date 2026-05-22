@@ -21,7 +21,9 @@ export default defineCommand({
         writeResult(
           {
             logged_in: false,
-            message: 'No token cached. Run `xiaobao-cli auth login` to log in.',
+            message:
+              'No token cached. Run `xiaobao-cli auth login --no-wait` then ' +
+              '`xiaobao-cli auth login --resume` to log in.',
           },
           args.format,
         );
