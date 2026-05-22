@@ -59,10 +59,12 @@ export default defineCommand({
       description:
         '自定义 headers，`K1=V1&K2=V2` 或 `K=V,K=V`。与默认注入的 tenant/project headers 合并（同名 key 用户传入优先）',
     },
-    'no-default-headers': {
+    'default-headers': {
       type: 'boolean',
+      default: true,
       description:
-        '不要默认注入 X-Tenant-Id / X-Project-Id headers（默认会按当前激活项目自动注入，调 /ai-open/* 开箱即用）',
+        '默认按当前激活项目自动注入 X-Tenant-Id / X-Project-Id headers（调 /ai-open/* 开箱即用）；' +
+        '`--no-default-headers` 关闭注入',
     },
     'api-base': { type: 'string' },
     'auth-base': { type: 'string' },
@@ -91,14 +93,14 @@ export default defineCommand({
         }
       }
       // Auto-inject tenant/project headers from active-project unless caller
-      // opts out. Plugin `xiaobao_api` doesn't do this (host-managed plugin
-      // tool, no global state assumption); CLI does because the user already
-      // ran `project use` to set context, and most /ai-open/* endpoints
-      // require these headers (returning 500 if missing, which is unfriendly).
+      // opts out with --no-default-headers. CLI does this (unlike the plugin)
+      // because the user already ran `project use`, and most /ai-open/*
+      // endpoints 500 without these headers. citty maps `--no-default-headers`
+      // to `default-headers: false` (the boolean defaults to true).
       // User-supplied --headers override (same key in user input wins).
       let mergedHeaders: Record<string, string> | undefined;
       const userHeaders = parseKV(args.headers);
-      if (!args['no-default-headers']) {
+      if (args['default-headers']) {
         const active = await loadActiveProject();
         if (active) {
           mergedHeaders = { ...tenantProjectHeaders(active), ...(userHeaders ?? {}) };

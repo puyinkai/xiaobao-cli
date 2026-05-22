@@ -30,7 +30,7 @@ npx -y @puyinkai/xiaobao-cli <subcommand>...
 任何 xiaobao-cli 命令的**前置 3 步**：
 
 ```bash
-# 1. 登录（OAuth device flow，5 分钟内浏览器授权一次，token 自动缓存）
+# 1. 登录（OAuth device flow，token 自动缓存）—— 见下方两种模式
 xiaobao-cli auth login
 
 # 2. 选激活项目（多租户 / 多项目场景必做；旺小宝是多租户业务）
@@ -43,6 +43,36 @@ xiaobao-cli audio list --from ... --to ...
 xiaobao-cli customer list --portrait 高意向
 # ...
 ```
+
+### 登录的两种模式 —— agent 必须用 split-flow
+
+`xiaobao-cli auth login` 默认**阻塞**轮询，最长卡 5 分钟等用户在浏览器授权。
+**agent 绝对不要直接跑阻塞模式** —— 它会占满一整轮对话。改用 `--no-wait`
+split-flow（两步、不阻塞）:
+
+```bash
+# 步骤 A：发起，立即返回（约 0.5s），拿到 verification_uri + device_code
+xiaobao-cli auth login --no-wait
+# stdout: { "awaiting_authorization": true, "verification_uri": "...",
+#           "user_code": "...", "device_code": "...", "expires_in": 300, ... }
+```
+
+agent 拿到后：把 `verification_uri` **原样**发给用户（放进只含 URL 的代码块，
+不要改写不要做 URL 编码），让用户浏览器打开授权，然后**结束本轮**，把控制权
+交还用户。
+
+```bash
+# 步骤 B：用户回复"授权完成"后，用步骤 A 的 device_code 换 token（秒级）
+xiaobao-cli auth login --device-code "<步骤A返回的 device_code>"
+# stdout: { "source": "device-flow", "expires_at": ..., "scope": "..." }
+```
+
+device_code 有效期 `expires_in` 秒（约 5 分钟）。超时就重跑步骤 A。
+若 token 仍有效 / refresh_token 可用，`--no-wait` 也会走 cache/refresh
+快速返回（`source: cache` / `refresh`），不会发起新的 device flow。
+
+**人类**在终端直接用，可以跑默认阻塞模式 `xiaobao-cli auth login`，盯着终端
+授权完它自己退出，更省事。
 
 查身份 / 当前激活项目（任何时候都可以）：
 
