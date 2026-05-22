@@ -30,8 +30,8 @@ npx -y @puyinkai/xiaobao-cli <subcommand>...
 任何 xiaobao-cli 命令的**前置 3 步**：
 
 ```bash
-# 1. 登录（OAuth device flow，token 自动缓存）—— 见下方两种模式
-xiaobao-cli auth login
+# 1. 登录（OAuth device flow 非阻塞 split-flow，token 自动缓存）—— 见下方
+xiaobao-cli auth login --no-wait
 
 # 2. 选激活项目（多租户 / 多项目场景必做；旺小宝是多租户业务）
 xiaobao-cli project list                # 列可选
@@ -44,17 +44,17 @@ xiaobao-cli customer list --portrait 高意向
 # ...
 ```
 
-### 登录的两种模式 —— agent 必须用 split-flow
+### 登录 —— 用 `--no-wait` split-flow（两步、不阻塞）
 
-`xiaobao-cli auth login` 默认**阻塞**轮询，最长卡 5 分钟等用户在浏览器授权。
-**agent 绝对不要直接跑阻塞模式** —— 它会占满一整轮对话。改用 `--no-wait`
-split-flow（两步、不阻塞）:
+登录走 OAuth device flow，固定用下面的两步、全程不阻塞。**不要跑裸
+`xiaobao-cli auth login`** —— 它会阻塞轮询、卡满一整轮对话。
 
 ```bash
-# 步骤 A：发起，立即返回（约 0.5s），拿到 verification_uri + device_code
+# 步骤 A：发起，立即返回（约 0.5s），拿到 verification_uri
 xiaobao-cli auth login --no-wait
 # stdout: { "awaiting_authorization": true, "verification_uri": "...",
-#           "user_code": "...", "device_code": "...", "expires_in": 300, ... }
+#           "user_code": "...", "expires_in": 300, "interval": 5, ... }
+# device_code 不在 stdout —— 已安全存到 ~/.xiaobao/pending-auth.json（0600）
 ```
 
 agent 拿到后：把 `verification_uri` **原样**发给用户（放进只含 URL 的代码块，
@@ -62,17 +62,15 @@ agent 拿到后：把 `verification_uri` **原样**发给用户（放进只含 U
 交还用户。
 
 ```bash
-# 步骤 B：用户回复"授权完成"后，用步骤 A 的 device_code 换 token（秒级）
-xiaobao-cli auth login --device-code "<步骤A返回的 device_code>"
+# 步骤 B：用户回复"授权完成"后，直接换 token（秒级）——
+# device_code 已由步骤 A 存在本地，--resume 自动读取，agent 无需持有 / 传递它
+xiaobao-cli auth login --resume
 # stdout: { "source": "device-flow", "expires_at": ..., "scope": "..." }
 ```
 
 device_code 有效期 `expires_in` 秒（约 5 分钟）。超时就重跑步骤 A。
-若 token 仍有效 / refresh_token 可用，`--no-wait` 也会走 cache/refresh
-快速返回（`source: cache` / `refresh`），不会发起新的 device flow。
-
-**人类**在终端直接用，可以跑默认阻塞模式 `xiaobao-cli auth login`，盯着终端
-授权完它自己退出，更省事。
+若 token 仍有效 / refresh_token 可用，`--no-wait` 会直接走 cache/refresh
+快速返回（`source: cache` / `refresh`），不发起新的 device flow，也无需步骤 B。
 
 查身份 / 当前激活项目（任何时候都可以）：
 
@@ -136,6 +134,11 @@ Agent 消费时**只 parse stdout JSON**，stderr 是辅助。
 | OAuth tokens | access_token + refresh_token + id_token + expires_at | `~/.xiaobao/token.json` | 0600 |
 | Active project | tenantId / tenantName / projectId / projectName / updatedAt | `~/.xiaobao/active-project.json` | 0600 |
 | User config（可选） | 覆盖 authBase / apiBase / scopes | `~/.xiaobao/config.json` | 0600 |
+| Pending auth（临时） | `--no-wait` split-flow 进行中的 device_code / user_code / 过期时间 | `~/.xiaobao/pending-auth.json` | 0600 |
+
+`pending-auth.json` 是 split-flow 的临时凭据中转：`--no-wait` 写入、`--resume`
+成功换到 token 后删除，`auth logout` 或 device_code 过期时也会清掉。device_code
+属凭据级数据，**只落本地文件、绝不进 stdout / agent 上下文**。
 
 ### `~/.openclaw/state/wangxiaobao/` fallback（向后兼容 openclaw-xiaobao plugin 用户）
 

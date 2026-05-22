@@ -20,6 +20,7 @@ import { join } from 'node:path';
 const PRIMARY_DIR = join(homedir(), '.xiaobao');
 const PRIMARY_TOKEN_FILE = join(PRIMARY_DIR, 'token.json');
 const LEGACY_TOKEN_FILE = join(homedir(), '.openclaw', 'state', 'wangxiaobao', 'token.json');
+const PENDING_AUTH_FILE = join(PRIMARY_DIR, 'pending-auth.json');
 
 /** Refresh proactively when access_token expires within this window. */
 export const EXPIRY_BUFFER_MS = 60_000;
@@ -112,5 +113,65 @@ export function decodeJwtPayload(jwt: string | undefined): Record<string, unknow
     return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8')) as Record<string, unknown>;
   } catch {
     return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pending device-authorization — backs the `auth login --no-wait` split-flow.
+//
+// `--no-wait` initiates the device flow then persists the device_code HERE
+// (mode 0600) instead of returning it on stdout: the device_code is
+// credential-grade and must never enter the agent's context. `auth login
+// --resume` reads it back to exchange for a token. The file is short-lived —
+// cleared on a successful login, on logout, and once the device_code expires.
+// No legacy openclaw fallback: this is a CLI-only concept.
+// ---------------------------------------------------------------------------
+
+export interface PendingAuth {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  interval: number;
+  /** epoch ms — the device_code is dead after this instant. */
+  expires_at: number;
+}
+
+export async function writePendingAuth(p: PendingAuth): Promise<void> {
+  await mkdir(PRIMARY_DIR, { recursive: true, mode: 0o700 });
+  await writeFile(PENDING_AUTH_FILE, JSON.stringify(p, null, 2), { mode: 0o600 });
+  try {
+    await chmod(PENDING_AUTH_FILE, 0o600);
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function readPendingAuth(): Promise<PendingAuth | null> {
+  if (!existsSync(PENDING_AUTH_FILE)) return null;
+  try {
+    return JSON.parse(await readFile(PENDING_AUTH_FILE, 'utf-8')) as PendingAuth;
+  } catch (e: unknown) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw e;
+  }
+}
+
+export async function clearPendingAuth(): Promise<void> {
+  try {
+    await unlink(PENDING_AUTH_FILE);
+  } catch (e: unknown) {
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+  }
+}
+
+/** Thrown by `auth login --resume` when there is no usable pending device_code. */
+export class NoPendingAuthError extends Error {
+  code = 'NO_PENDING_AUTH' as const;
+  hint =
+    '先跑 `xiaobao-cli auth login --no-wait` 发起设备授权，在浏览器完成授权后再跑 ' +
+    '`xiaobao-cli auth login --resume`。';
+  constructor(message = '没有待完成的设备授权（从未发起，或 device_code 已过期）') {
+    super(message);
+    this.name = 'NoPendingAuthError';
   }
 }

@@ -10,7 +10,7 @@
 import { defineCommand } from 'citty';
 import { resolveConfig } from '../../core/config';
 import { revokeRefreshToken } from '../../core/device-flow';
-import { clearToken, readToken } from '../../core/token-store';
+import { clearPendingAuth, clearToken, readToken } from '../../core/token-store';
 import { writeError, writeResult } from '../../output/format';
 
 export default defineCommand({
@@ -28,6 +28,7 @@ export default defineCommand({
         revoked = await revokeRefreshToken(config, cached.refresh_token);
       }
       await clearToken();
+      await clearPendingAuth();
       writeResult(
         {
           message: 'Logged out',
