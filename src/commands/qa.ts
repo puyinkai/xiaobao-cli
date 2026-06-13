@@ -4,6 +4,10 @@
  * Natural-language Q&A over the active project's data — customers / visits /
  * 挖需率 / 销冠 / 录音覆盖率 / KPIs. Wraps POST /ai-open/langchain/quick-qa/query.
  *
+ * Backend note: ai-open now routes this endpoint to wang-ai-mcp's sql-agent
+ * (natural-language → SQL), replacing the legacy fast-responder. The request
+ * shape ({ prompt, thread_id }) and response are unchanged — transparent here.
+ *
  * Multi-turn: pass back the `thread_id` from previous response via --thread-id
  * for follow-ups. Timeout 30 min (backend can run long multi-step data lookups).
  */

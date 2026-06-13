@@ -155,8 +155,8 @@ openclaw 的副本（保留 plugin session 完整性）。`auth logout` 例外 �
 
 ## 数据权限隔离
 
-`audio list` / `customer list` / `visit list` / `focus list` / `resistance list` /
-`consultant list` 所有业务命令的后端都按**当前登录用户的授权范围**过滤数据:
+`audio list` / `customer list` / `visit list` / `visit summary` / `focus list` /
+`resistance list` / `consultant list` / `qa` 所有业务命令的后端都按**当前登录用户的授权范围**过滤数据:
 
 - 普通顾问：只看自己名下
 - 团队长：看本团队
@@ -164,6 +164,13 @@ openclaw 的副本（保留 plugin session 完整性）。`auth logout` 例外 �
 
 `total: 0` 不一定是"没数据"，也可能是**当前账号无权访问**。看不到的客户 / 顾问
 不是 bug，是设计如此。要扩权限找管理员。
+
+**例外 —— `kb *`（知识库）是项目级隔离**：`kb search` / `kb docs` 按当前激活项目（estate）
+返回该项目知识，不按顾问授权范围细分；`kb doc` / `kb doc-content` 按 docId 直取。
+知识库面向全项目，不存在"看不到别人名下"的概念。
+
+> 后端链路：上述命令统一经 `ai-open`（公网开放层 / 鉴权）代理到内网业务层
+> `wang-ai-mcp`，对调用方透明，命令用法不变。
 
 ## 时间格式
 

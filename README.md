@@ -1,9 +1,12 @@
 # @puyinkai/xiaobao-cli
 
 旺小宝 CLI —— [openclaw-xiaobao](https://github.com/puyinkai/openclaw-xiaobao)
-plugin 的 host-agnostic 等价物。14 个能力 1:1 映射为 14 个 CLI 子命令，**人类
-直接敲也好用，AI agent（Claude Code / Codex / Cursor / OpenClaw / 任何能 shell
-out 的 host）通过 stdout JSON 消费**。
+plugin 的 host-agnostic 等价物。业务数据 / 问数 / 来访总结 / 知识库 等能力映射为
+CLI 子命令，**人类直接敲也好用，AI agent（Claude Code / Codex / Cursor / OpenClaw /
+任何能 shell out 的 host）通过 stdout JSON 消费**。
+
+> 后端链路：CLI 调 `ai-open`（公网开放层 / OAuth 鉴权），ai-open 作为薄代理转发到内网
+> 业务层 `wang-ai-mcp`。命令用法对调用方透明。
 
 参考 [larksuite/cli](https://github.com/larksuite/cli) 范式，跟 OpenClaw plugin
 解耦：plugin 这条线（`@puyinkai/openclaw-xiaobao`）保持现状，本 CLI 走 npm，
@@ -30,7 +33,7 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 > openclaw-xiaobao 老用户：CLI 默认从 `~/.openclaw/state/wangxiaobao/` fallback
 > 读 token + active-project，**零迁移开箱即用**。新写操作落到 `~/.xiaobao/`。
 
-## 14 个能力
+## 能力一览
 
 | 命令 | 对应 openclaw-xiaobao tool |
 | --- | --- |
@@ -46,7 +49,12 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 | `visit list [--customer-id] [--from] [--to]` | `xiaobao_list_visits` |
 | `focus list [--visit-ids] [--category] ...` | `xiaobao_list_customer_focus` |
 | `resistance list [...]` | `xiaobao_list_customer_resistance` |
-| `qa <prompt> [--thread-id <id>]` | `xiaobao_quick_qa` |
+| `qa <prompt> [--thread-id <id>]` | `xiaobao_quick_qa`（底层已切 sql-agent） |
+| `visit summary [--customer-id] [--visit-id] [--template] [--from] [--to]` | 新增 · 来访接待总结 |
+| `kb search <query> [--k]` | 新增 · 知识库语义检索 |
+| `kb docs [--title]` | 新增 · 知识库文档列表 |
+| `kb doc <doc-id>` | 新增 · 知识库文档详情 |
+| `kb doc-content <doc-id> [--offset] [--limit]` | 新增 · 知识库文档正文分页 |
 | `api <METHOD> <path>` | `xiaobao_api` |
 
 ## 通用 flags
@@ -73,8 +81,10 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 
 ## skill 配套
 
-`skills/` 目录下 8 个 SKILL.md 跟 cli 同包发布，跟 openclaw-xiaobao 那边镜像，
-只是调用从 plugin tool invoke 改为 shell out `xiaobao-cli ...`。
+`skills/` 目录下的 SKILL.md 跟 cli 同包发布，跟 openclaw-xiaobao 那边镜像，
+只是调用从 plugin tool invoke 改为 shell out `xiaobao-cli ...`。本次新增
+`wangxiaobao-visit-summary-query`（来访接待总结）与 `wangxiaobao-knowledge-base`（知识库）
+两个 skill；`wangxiaobao-quick-qa` 的问数底层由 fast-responder 切换为 sql-agent。
 
 ## License
 

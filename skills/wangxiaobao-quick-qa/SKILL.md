@@ -15,6 +15,10 @@ metadata:
 跑 `xiaobao-cli qa` 用自然语言问当前激活项目的业务数据。
 零副作用，不写文件、不动 wiki，所以用错也没成本，鼓励放心调用。
 
+> **后端说明**：问数底层已由旧的 fast-responder 升级为 **sql-agent**（自然语言 → SQL，
+> 由 ai-open 代理到 wang-ai-mcp）。行为对调用方**透明**——请求 `{ prompt, thread_id }`
+> 与响应结构（含 `type: "quick-qa"`）都不变，多轮 `--thread-id` 续接照旧。
+
 ## 执行前必读
 
 - 必须有有效 token：先调 `xiaobao-cli auth whoami`；未登录 / 过期就走 `auth login --no-wait` split-flow（见 wangxiaobao-shared）
