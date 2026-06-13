@@ -17,7 +17,7 @@ export default defineCommand({
     'doc-id': { type: 'positional', required: true, description: '文档 ID' },
     'api-base': { type: 'string' },
     'auth-base': { type: 'string' },
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     try {

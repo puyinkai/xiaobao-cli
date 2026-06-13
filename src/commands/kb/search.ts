@@ -23,7 +23,7 @@ export default defineCommand({
     'rerank-threshold': { type: 'string', description: 'rerank 阈值（小数）' },
     'api-base': { type: 'string' },
     'auth-base': { type: 'string' },
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     try {

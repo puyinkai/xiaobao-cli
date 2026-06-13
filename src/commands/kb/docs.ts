@@ -17,7 +17,7 @@ export default defineCommand({
     title: { type: 'string', description: '标题关键字过滤（可选）' },
     'api-base': { type: 'string' },
     'auth-base': { type: 'string' },
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     try {

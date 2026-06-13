@@ -87,7 +87,7 @@ xiaobao-cli project current   # 显示当前激活的 tenant/project + updatedAt
 
 | 流 | 内容 |
 | --- | --- |
-| **stdout** | 结果 / 错误对象，**JSON 格式**（默认）或 TOON 格式（`--format toon`），都是有效 JSON / 可机器解析 |
+| **stdout** | 结果 / 错误对象，默认 **TOON 格式**（省 token）；`--format json` 切回 JSON。均可机器解析 |
 | **stderr** | 进度 / 人类友好错误提示 / verification URL 等。Agent 一般忽略 |
 | **exit code** | 0 = 成功；非 0 = 失败（业务错误 / 参数错 / 网络错） |
 
@@ -97,8 +97,8 @@ Agent 消费时**只 parse stdout JSON**，stderr 是辅助。
 
 | 值 | 用途 |
 | --- | --- |
-| `json`（默认） | pretty JSON，agent / 人类都能读 |
-| `toon` | TOON 格式，uniform array of objects 省 30-50% token（LLM 上下文优化） |
+| `toon`（默认） | TOON 格式，uniform array of objects 省 30-50% token（LLM 上下文优化） |
+| `json` | pretty JSON，agent / 人类都能读；需要严格 JSON 时显式加 `--format json` |
 
 ## 错误对象结构
 

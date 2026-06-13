@@ -12,7 +12,7 @@ import { writeError, writeResult } from '../../output/format';
 export default defineCommand({
   meta: { name: 'whoami', description: '查看当前登录的旺小宝用户（解析缓存 id_token）' },
   args: {
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     try {

@@ -15,7 +15,7 @@ import { writeError, writeResult } from '../../output/format';
 export default defineCommand({
   meta: { name: 'current', description: '显示当前激活的租户/项目' },
   args: {
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     try {

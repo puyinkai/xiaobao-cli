@@ -1,9 +1,9 @@
 /**
  * Format a result payload to stdout in one of three flavours:
  *
- *   json   (default)   pretty JSON, agent-friendly and human-OK
- *   toon              TOON (Token-Oriented Object Notation) — ~30-50% fewer
+ *   toon   (default)   TOON (Token-Oriented Object Notation) — ~30-50% fewer
  *                     tokens on uniform array-of-objects (LLM context optimization)
+ *   json              pretty JSON, agent-friendly and human-OK
  *   table             not implemented in 0.1.0 — falls back to pretty JSON
  *                     (a v0.1.x target; pure cosmetic, doesn't affect agent flow)
  *
@@ -15,7 +15,7 @@ import { encode as toonEncode } from '@toon-format/toon';
 
 export type OutputFormat = 'json' | 'toon' | 'table';
 
-export function writeResult(data: unknown, format: string | undefined = 'json'): void {
+export function writeResult(data: unknown, format: string | undefined = 'toon'): void {
   const fmt = normalize(format);
   const text =
     fmt === 'toon' ? toonEncode(data) :
@@ -24,7 +24,7 @@ export function writeResult(data: unknown, format: string | undefined = 'json'):
 }
 
 /** Print an error structurally to stdout (still parseable) and human hint to stderr. */
-export function writeError(error: unknown, format: string | undefined = 'json'): void {
+export function writeError(error: unknown, format: string | undefined = 'toon'): void {
   const payload = serializeError(error);
   const fmt = normalize(format);
   const text =
@@ -44,9 +44,10 @@ export function writeError(error: unknown, format: string | undefined = 'json'):
 }
 
 function normalize(f: string | undefined): OutputFormat {
-  if (f === 'toon') return 'toon';
+  if (f === 'json') return 'json';
   if (f === 'table') return 'table';
-  return 'json';
+  // default: unset / 'toon' / unrecognized → toon
+  return 'toon';
 }
 
 function serializeError(error: unknown): Record<string, unknown> {

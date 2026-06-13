@@ -18,7 +18,7 @@ export default defineCommand({
     'tenant-name': { type: 'string', required: true, description: '租户显示名' },
     'project-id': { type: 'string', required: true, description: '项目 ID（estateId）' },
     'project-name': { type: 'string', required: true, description: '项目显示名' },
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     try {

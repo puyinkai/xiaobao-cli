@@ -18,7 +18,7 @@ export default defineCommand({
   args: {
     'api-base': { type: 'string' },
     'auth-base': { type: 'string' },
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     try {

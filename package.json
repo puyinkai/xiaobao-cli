@@ -1,6 +1,6 @@
 {
   "name": "@puyinkai/xiaobao-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "旺小宝 CLI — host-agnostic 业务数据 / 问数 / 来访总结 / 知识库 能力 (openclaw-xiaobao plugin 的 CLI 等价物)",
   "type": "module",
   "bin": {

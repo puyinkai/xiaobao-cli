@@ -19,7 +19,7 @@ export default defineCommand({
     limit: { type: 'string', description: '内容长度，默认 1000，最大 2000' },
     'api-base': { type: 'string' },
     'auth-base': { type: 'string' },
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     try {

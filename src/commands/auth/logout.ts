@@ -17,7 +17,7 @@ export default defineCommand({
   meta: { name: 'logout', description: '清除本地 token + 尽力 revoke 服务端 refresh_token' },
   args: {
     'auth-base': { type: 'string', description: '覆盖 auth base URL' },
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     try {

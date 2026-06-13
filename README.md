@@ -59,7 +59,7 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 
 ## 通用 flags
 
-- `--format json|toon|table` —— 默认 `json`（agent 友好）；`table` 人类友好；`toon` 给 LLM 上下文用
+- `--format toon|json|table` —— 默认 `toon`（省 token，适合 LLM 上下文）；`json` 严格 JSON、agent/人类友好；`table` 暂未实现（回退 JSON）
 - `--api-base <url>` / `--auth-base <url>` —— 覆盖默认（也可 env `XIAOBAO_API_BASE` / `XIAOBAO_AUTH_BASE`）
 
 ## 输出协议

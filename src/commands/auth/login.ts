@@ -67,7 +67,7 @@ export default defineCommand({
     },
     'api-base': { type: 'string', description: '覆盖 API base URL' },
     'auth-base': { type: 'string', description: '覆盖 auth base URL' },
-    format: { type: 'string', default: 'json' },
+    format: { type: 'string', default: 'toon' },
   },
   async run({ args }) {
     const config = resolveConfig({
