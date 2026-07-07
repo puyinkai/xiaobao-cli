@@ -55,6 +55,7 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 | `kb docs [--title]` | 新增 · 知识库文档列表 |
 | `kb doc <doc-id>` | 新增 · 知识库文档详情 |
 | `kb doc-content <doc-id> [--offset] [--limit]` | 新增 · 知识库文档正文分页 |
+| `quantum <metric> [--view] [--visit-type] …` | 新增 · 量子看板 / KPI 统计（20 指标） |
 | `api <METHOD> <path>` | `xiaobao_api` |
 
 ## 通用 flags
@@ -82,9 +83,10 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 ## skill 配套
 
 `skills/` 目录下的 SKILL.md 跟 cli 同包发布，跟 openclaw-xiaobao 那边镜像，
-只是调用从 plugin tool invoke 改为 shell out `xiaobao-cli ...`。本次新增
-`wangxiaobao-visit-summary-query`（来访接待总结）与 `wangxiaobao-knowledge-base`（知识库）
-两个 skill；`wangxiaobao-quick-qa` 的问数底层由 fast-responder 切换为 sql-agent。
+只是调用从 plugin tool invoke 改为 shell out `xiaobao-cli ...`。近期新增
+`wangxiaobao-visit-summary-query`（来访接待总结）、`wangxiaobao-knowledge-base`（知识库）
+与 `wangxiaobao-quantum-stats`（量子看板 / KPI 统计，含 `references/quantum-metrics.md`）；
+`wangxiaobao-quick-qa` 的问数底层由 fast-responder 切换为 sql-agent。
 
 ## License
 

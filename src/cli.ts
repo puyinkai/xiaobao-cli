@@ -3,8 +3,8 @@
  * xiaobao-cli entrypoint.
  *
  * Capabilities mapped from the openclaw-xiaobao plugin to CLI subcommands,
- * plus visit-summary and knowledge-base queries — all proxied through
- * ai-open → wang-ai-mcp. See README for the full command map.
+ * plus visit-summary, knowledge-base and quantum KPI stats — all proxied
+ * through ai-open → wang-ai-mcp. See README for the full command map.
  */
 
 import { readFileSync } from 'node:fs';
@@ -35,6 +35,7 @@ const main = defineCommand({
     resistance: () => import('./commands/resistance/index').then((m) => m.default),
     qa: () => import('./commands/qa').then((m) => m.default),
     kb: () => import('./commands/kb/index').then((m) => m.default),
+    quantum: () => import('./commands/quantum').then((m) => m.default),
     api: () => import('./commands/api').then((m) => m.default),
   },
 });

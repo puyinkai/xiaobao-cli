@@ -156,7 +156,7 @@ openclaw 的副本（保留 plugin session 完整性）。`auth logout` 例外 �
 ## 数据权限隔离
 
 `audio list` / `customer list` / `visit list` / `visit summary` / `focus list` /
-`resistance list` / `consultant list` / `qa` 所有业务命令的后端都按**当前登录用户的授权范围**过滤数据:
+`resistance list` / `consultant list` / `qa` / `quantum` 所有业务命令的后端都按**当前登录用户的授权范围**过滤数据:
 
 - 普通顾问：只看自己名下
 - 团队长：看本团队
