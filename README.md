@@ -56,6 +56,8 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 | `kb doc <doc-id>` | 新增 · 知识库文档详情 |
 | `kb doc-content <doc-id> [--offset] [--limit]` | 新增 · 知识库文档正文分页 |
 | `quantum <metric> [--view] [--visit-type] …` | 新增 · 量子看板 / KPI 统计（20 指标） |
+| `admin sales-report --from --to [--by project\|zone]` | 新增 · 公司经营数据 出库/回款（super-admin，独立白名单） |
+| `admin token-usage --from --to [--model] …` | 新增 · LLM token 用量（super-admin，独立白名单） |
 | `api <METHOD> <path>` | `xiaobao_api` |
 
 ## 通用 flags

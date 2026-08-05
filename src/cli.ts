@@ -36,6 +36,7 @@ const main = defineCommand({
     qa: () => import('./commands/qa').then((m) => m.default),
     kb: () => import('./commands/kb/index').then((m) => m.default),
     quantum: () => import('./commands/quantum').then((m) => m.default),
+    admin: () => import('./commands/admin/index').then((m) => m.default),
     api: () => import('./commands/api').then((m) => m.default),
   },
 });
