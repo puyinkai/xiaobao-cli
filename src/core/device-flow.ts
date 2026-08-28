@@ -62,6 +62,36 @@ export async function initiateDeviceAuthorization(config: ResolvedConfig): Promi
   return data;
 }
 
+/**
+ * RFC 8628 §3.4 — ONE token-endpoint attempt. `'pending'` / `'slow_down'`
+ * mean "not yet"; anything else terminal is thrown. Shared by the blocking
+ * poll loop and by `auth status` (which must return within seconds).
+ */
+export async function exchangeDeviceCode(
+  config: ResolvedConfig,
+  deviceCode: string,
+): Promise<TokenResponse | 'pending' | 'slow_down'> {
+  const url = `${config.authBase}/oauth2/token`;
+  const body = new URLSearchParams({
+    grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+    device_code: deviceCode,
+  });
+  const resp = await fetch(url, { method: 'POST', headers: authHeaders(config), body: body.toString() });
+  const parsed = (await resp.json()) as TokenResponse | ErrorBody;
+  if (resp.ok) return parsed as TokenResponse;
+
+  const err = (parsed as ErrorBody).error;
+  if (err === 'authorization_pending') return 'pending';
+  if (err === 'slow_down') return 'slow_down';
+  if (err === 'access_denied') {
+    throw { code: 'ACCESS_DENIED', message: 'User declined authorization', body: parsed };
+  }
+  if (err === 'expired_token') {
+    throw { code: 'EXPIRED_TOKEN', message: 'Device code expired before user approved', body: parsed };
+  }
+  throw { code: 'TOKEN_POLL_FAILED', status: resp.status, body: parsed };
+}
+
 /** RFC 8628 §3.4 — poll the token endpoint until success / denial / expiry. */
 export async function pollForToken(
   config: ResolvedConfig,
@@ -75,29 +105,13 @@ export async function pollForToken(
 
   while (Date.now() < Math.min(serverDeadline, hardDeadline)) {
     await sleep(pollIntervalMs);
-
-    const url = `${config.authBase}/oauth2/token`;
-    const body = new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-      device_code: deviceCode,
-    });
-    const resp = await fetch(url, { method: 'POST', headers: authHeaders(config), body: body.toString() });
-    const parsed = (await resp.json()) as TokenResponse | ErrorBody;
-    if (resp.ok) return parsed as TokenResponse;
-
-    const err = (parsed as ErrorBody).error;
-    if (err === 'authorization_pending') continue;
-    if (err === 'slow_down') {
+    const result = await exchangeDeviceCode(config, deviceCode);
+    if (result === 'pending') continue;
+    if (result === 'slow_down') {
       pollIntervalMs += 5_000;
       continue;
     }
-    if (err === 'access_denied') {
-      throw { code: 'ACCESS_DENIED', message: 'User declined authorization', body: parsed };
-    }
-    if (err === 'expired_token') {
-      throw { code: 'EXPIRED_TOKEN', message: 'Device code expired before user approved', body: parsed };
-    }
-    throw { code: 'TOKEN_POLL_FAILED', status: resp.status, body: parsed };
+    return result;
   }
   throw {
     code: 'TIMEOUT',

@@ -60,6 +60,13 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 | `admin token-usage --from --to [--model] …` | 新增 · LLM token 用量（super-admin，独立白名单） |
 | `api <METHOD> <path>` | `xiaobao_api` |
 
+## WorkBuddy Connector
+
+`workbuddy/` 是按《WorkBuddy Connector 对接规范》方案二（CLI + Skill）准备的连接器配置
+（`connector-meta.json` / `cli.json` / `icon.svg`）；`npm run workbuddy:pack` 会连同 `skills/`
+打成 `dist-workbuddy/wangxiaobao-connector.zip` 供提交审核。认证走 `auth login`（device flow）
++ `auth status`（exit 0 = 已登录，可完成待授权的 device code 换 token）+ `auth logout`。
+
 ## 通用 flags
 
 - `--format toon|json|table` —— 默认 `toon`（省 token，适合 LLM 上下文）；`json` 严格 JSON、agent/人类友好；`table` 暂未实现（回退 JSON）

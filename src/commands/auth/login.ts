@@ -181,6 +181,16 @@ export default defineCommand({
       }
 
       // ---- Mode 1: default — block and poll until done ----
+      // Persist the pending device_code too: hosts like WorkBuddy may kill this
+      // process right after reading the URL, then poll `auth status`, which
+      // finishes the exchange from this file.
+      await writePendingAuth({
+        device_code: init.device_code,
+        user_code: init.user_code,
+        verification_uri: verificationUri,
+        interval,
+        expires_at: Date.now() + init.expires_in * 1000,
+      });
       process.stderr.write(
         '\n请在浏览器中打开以下链接完成登录并授权访问你的旺小宝账号:\n' +
           `\n  🔗 ${verificationUri}\n` +

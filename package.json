@@ -1,6 +1,6 @@
 {
   "name": "@puyinkai/xiaobao-cli",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "旺小宝 CLI — host-agnostic 业务数据 / 问数 / 来访总结 / 知识库 能力 (openclaw-xiaobao plugin 的 CLI 等价物)",
   "type": "module",
   "bin": {
@@ -23,7 +23,8 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "dev": "node --import tsx src/cli.ts"
+    "dev": "node --import tsx src/cli.ts",
+    "workbuddy:pack": "rm -rf dist-workbuddy && mkdir -p dist-workbuddy/wangxiaobao && cp workbuddy/connector-meta.json workbuddy/cli.json workbuddy/icon.svg dist-workbuddy/wangxiaobao/ && cp -R skills dist-workbuddy/wangxiaobao/skills && cd dist-workbuddy && zip -qr wangxiaobao-connector.zip wangxiaobao && echo dist-workbuddy/wangxiaobao-connector.zip"
   },
   "dependencies": {
     "citty": "^0.1.6"
