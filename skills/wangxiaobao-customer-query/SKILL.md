@@ -162,4 +162,4 @@ xiaobao-cli customer list --page 1 --size 1
 - **`total: 0`** — 时间窗口 / 过滤条件没匹配到，**或**当前用户授权范围为空
   （新人顾问刚入职 / 团队成员被移走等）
 - **顾问名找不到** — 不在当前用户授权可见范围内；不要硬调 list_customers 试
-- **画像匹配不准** — portrait 太长 / 太具体导致 LIKE 不命中；改短关键词
+- **画像匹配不准** — portrait 太长 / 太具体导致 LIKE 不命中；改短关键词；不确定项目有哪些画像字段/标签时先 `xiaobao-cli config fields` 查字段字典（解读 dynamic_tags 的 key 含义）

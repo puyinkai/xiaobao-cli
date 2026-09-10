@@ -156,7 +156,7 @@ openclaw 的副本（保留 plugin session 完整性）。`auth logout` 例外 �
 ## 数据权限隔离
 
 `audio list` / `customer list` / `visit list` / `visit summary` / `focus list` /
-`resistance list` / `consultant list` / `qa` / `quantum` 所有业务命令的后端都按**当前登录用户的授权范围**过滤数据:
+`resistance list` / `consultant list` / `qa` / `quantum` / `follow *` / `portrait *` / `beautx *` 所有业务命令的后端都按**当前登录用户的授权范围**过滤数据:
 
 - 普通顾问：只看自己名下
 - 团队长：看本团队
@@ -168,6 +168,10 @@ openclaw 的副本（保留 plugin session 完整性）。`auth logout` 例外 �
 **例外 —— `kb *`（知识库）是项目级隔离**：`kb search` / `kb docs` 按当前激活项目（estate）
 返回该项目知识，不按顾问授权范围细分；`kb doc` / `kb doc-content` 按 docId 直取。
 知识库面向全项目，不存在"看不到别人名下"的概念。
+
+**本地工具 —— `date *` 不走网络**：`date now/today/yesterday/weekday/add/diff/range today|yesterday|this-week|this-month|last-7-days|today-so-far`
+纯本地计算（默认时区 Asia/Shanghai）。所有需要时间窗的命令（visit/follow/quantum/portrait…）**先用它取 from/to**，
+禁止凭记忆推算日期。
 
 **例外 —— `admin *`（super-admin 经营报表）**：`admin sales-report` / `admin token-usage`
 是**公司级**数据（经营出库/回款、LLM token 用量），**不需要激活项目**，且走**独立白名单**

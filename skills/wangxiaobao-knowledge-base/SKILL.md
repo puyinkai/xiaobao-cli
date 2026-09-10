@@ -1,7 +1,7 @@
 ---
 name: wangxiaobao-knowledge-base
 version: 0.1.0
-description: "旺小宝项目知识库：语义检索项目知识 chunk（kb search）、列文档（kb docs）、看文档详情（kb doc）、分页读文档正文（kb doc-content）。search/docs 按当前激活项目隔离；doc/doc-content 按 docId 直取。只读、无副作用。高频命令: xiaobao-cli kb search '<query>' [--k N]; xiaobao-cli kb docs [--title <kw>]; xiaobao-cli kb doc <doc-id>; xiaobao-cli kb doc-content <doc-id> [--offset N] [--limit N]。何时用：用户问项目资料/楼盘知识/销售政策/户型文档/物料/知识库里有没有讲过X/某文档具体写了啥/帮我查下资料。注：search 返回 chunk 不是全文，要逐段读全文用 doc-content 翻页（看 hasMore 续翻）；k 默认 5 上限 20；要业务数据问数走 quick-qa，不是这里。"
+description: "旺小宝项目知识库：语义检索项目知识 chunk（kb search）、列文档（kb docs）、看文档详情（kb doc）、分页读文档正文（kb doc-content）。search/docs 按当前激活项目隔离；doc/doc-content 按 docId 直取。只读、无副作用。高频命令: xiaobao-cli kb search '<query>' [--k N]; xiaobao-cli kb docs [--title <kw>]; xiaobao-cli kb doc <doc-id>; xiaobao-cli kb doc-content <doc-id> [--offset N] [--limit N]。何时用：用户问项目资料/楼盘知识/销售政策/户型文档/物料/知识库里有没有讲过X/某文档具体写了啥/帮我查下资料。注：search 返回 chunk 不是全文，要逐段读全文用 doc-content 翻页（看 hasMore 续翻）；k 默认 5 上限 20；"
 metadata:
   requires:
     bins: ["xiaobao-cli"]

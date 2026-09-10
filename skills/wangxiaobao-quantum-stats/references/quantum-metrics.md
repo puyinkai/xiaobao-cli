@@ -29,7 +29,7 @@
 | `special-visit` | 特殊来访标签卡（有效/无效 visitLabel 分布） | view: `summary\|user` | ⚠️ H5「特殊到访组数/排名」**不用这个**，用 `visit --visit-type special` |
 | `month-report` | 月报 | mode: `query`(默认)`\|find` | — |
 | `deal` | 成交统计 | view: `status`(默认)`\|team\|user\|period` | `team`=各团队 count/total/rate；`--deal-status` 默认 `1,2,3` |
-| `intent` | 意向统计 | view: `level`(默认，全项目级别分布)`\|team\|user\|period` | `team/user/period` 须 `--intent-level A\|B\|C\|D\|E`；`--intent-dimension review\|ai`(默认 ai)；`--direction left\|right`（period 翻页） |
+| `intent` | 意向统计 | view: `level`(默认，全项目级别分布)`\|team\|user\|period` | `team/user/period` 须 `--intent-level A\|B\|C\|D\|E`；`--intent-dimension review`(默认，复核后数据)`\|ai`(用户明确说 AI 评级才用)；`--direction left\|right`（period 翻页） |
 | `pin-talk` | 销讲执行率 | view: `summary\|visit_status\|team\|user\|dimension\|speech\|models` | `--visit-type first\|second\|third_more`；`--model-id/--dimension-id/--speech-id` 下钻 |
 | `demand-card` | 挖需执行率卡片 | view: `summary\|visit_status\|team\|user\|dimension\|speech` | `--visit-type first\|second\|third_more\|all`；团队最高挖需率用 `--view team` |
 | `rhetoric` | 说辞统计 | 无 view（默认汇总） | — |
@@ -40,4 +40,5 @@
 - 团队最高挖需率 → `demand-card --view team`。
 - 首访/复访/三访+ → `--visit-type first|second|third_more`。
 - 「客户数」口径 → `--stat-dimension customer_num`（默认是 visit_times / follow_times）。
-- 意向复核后 → `--intent-dimension review`（默认 ai）。
+- 意向口径默认 `review`（复核后数据）；用户明确说「AI 智能评级」才 `--intent-dimension ai`。
+- pin-talk / demand-card / job-performance / work-quality / visit-timer 等均为**接待顾问（置业顾问）维度**的表现统计（rank/user 按顾问、team 按顾问团队）。

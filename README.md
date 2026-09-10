@@ -56,6 +56,12 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 | `kb doc <doc-id>` | 新增 · 知识库文档详情 |
 | `kb doc-content <doc-id> [--offset] [--limit]` | 新增 · 知识库文档正文分页 |
 | `quantum <metric> [--view] [--visit-type] …` | 新增 · 量子看板 / KPI 统计（20 指标） |
+| `follow list` / `follow summary` | 新增 · 旺跟进明细分页 / 电话微信指标汇总 |
+| `portrait list` / `portrait get <字段>` | 新增 · 画像字段清单 / 单字段饼图分布 |
+| `config fields` | 新增 · 客户字段配置字典（解读 dynamic_tags） |
+| `audio analyze <query> [--customer-id]` | 新增 · 录音批量分析（LLM） |
+| `beautx plan\|deal-analysis\|portrait-tags\|visit-evaluate` | 新增 · 医美四查询 |
+| `date now\|today\|range this-week …` | 新增 · 本地日期工具（不走网络） |
 | `admin sales-report --from --to [--by project\|zone]` | 新增 · 公司经营数据 出库/回款（super-admin，独立白名单） |
 | `admin token-usage --from --to [--model] …` | 新增 · LLM token 用量（super-admin，独立白名单） |
 | `api <METHOD> <path>` | `xiaobao_api` |

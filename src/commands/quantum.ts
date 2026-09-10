@@ -51,7 +51,7 @@ export default defineCommand({
     'speech-id': { type: 'string', description: '话术 ID（view=speech）' },
     config: { type: 'string', description: '卡片 config JSON（一般不传）' },
     'stat-dimension': { type: 'string', description: 'visit_times|customer_num、follow_times|customer_num' },
-    'intent-dimension': { type: 'string', description: 'review|ai（intent）' },
+    'intent-dimension': { type: 'string', description: 'intent 数据口径：review=复核后数据（默认，日常汇报用）｜ai=AI 智能评级；用户明确说「AI 评级」才传 ai' },
     'risk-dimension': { type: 'string', description: 'all|effective|review|invalid（risk）' },
     'intent-level': { type: 'string', description: 'A|B|C|D|E（intent view=user|period）' },
     direction: { type: 'string', description: 'left|right（intent view=period 翻页）' },

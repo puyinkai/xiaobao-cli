@@ -47,8 +47,10 @@ metadata:
 3. **团队最高挖需率** → `quantum demand-card --view team`。
 4. **首访/复访/三访+** → `--visit-type first|second|third_more`（不传 ≠ 已选某 Tab，可能混合或未过滤）。
 5. **客户数维度** → `--stat-dimension customer_num`（来访默认 `visit_times`、跟进默认 `follow_times`；别一看到「客户数」就误用）。
-6. **意向复核后数据** → `--intent-dimension review`（默认 `ai`）。
+6. **意向口径默认 review（复核后数据）**：日常汇报/统计用 `--intent-dimension review`；用户明确说「AI 智能评级」才传 `ai`。
 7. **visit-timer 的 team/date 下钻** → 必填 `--interval-start/--interval-end`（分桶：0/30/60/120 → 30/60/120/1000 分钟）。
+8. **顾问维度指标**：销讲执行率(`pin-talk`)、挖需执行率(`demand-card`)、工作表现(`job-performance`)、工作质量(`work-quality`)、接访时长(`visit-timer`)等统计的都是**接待顾问（置业顾问）**的表现——`rank/user` 视图按顾问、`team` 视图按顾问团队聚合，不是客户维度。
+9. **路由**：群体画像分布（业态/面积/区域…饼图）优先 `portrait get`；单客户标签优先 `visit summary`；`customer list` 的 dynamic_tags 最低优先，禁止拿它手算分布。
 
 ## 响应
 统一 `Result<Object>`，`data` 结构**随 metric/view 变化**（列表 / 嵌套 / 汇总都可能）。CLI 再包一层 → 读 `resp.data.data`。**按实际返回展示，不要假设固定结构、不要硬解析**。默认 `--format toon` 省 token；要严格 JSON 加 `--format json`。
