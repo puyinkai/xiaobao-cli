@@ -9,6 +9,8 @@
  * with a refreshed token on HTTP 401.
  */
 
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 import { refreshToken } from './device-flow';
 import { isAccessTokenValid, readToken, writeToken, type StoredToken } from './token-store';
 import type { ResolvedConfig } from './config';
@@ -58,20 +60,72 @@ function buildUrl(apiBase: string, path: string, query?: Record<string, string>)
 }
 
 
+interface RawResponse {
+  status: number;
+  contentType: string;
+  text: string;
+}
+
 /**
- * fetch with retry on transient network errors (undici "TypeError: fetch
- * failed" — connection reset / unreachable). HTTP error responses and
- * timeouts are NOT retried; backoff 200ms → 400ms → 800ms, max 3 retries.
+ * Single HTTP(S) request on Node's native http/https modules with
+ * `agent: false` — no connection pool, a fresh TCP connection per request,
+ * closed when the response ends (same behavior as curl). This avoids the
+ * intermittent "fetch failed" caused by undici's keep-alive pool reusing a
+ * connection the server has already half-closed.
  */
-async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+function requestOnce(
+  url: string,
+  method: HttpMethod,
+  headers: Record<string, string>,
+  body: string | undefined,
+  timeoutMs: number,
+): Promise<RawResponse> {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const fn = u.protocol === 'http:' ? httpRequest : httpsRequest;
+    const req = fn(u, { method, headers, agent: false }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (c: Buffer) => chunks.push(c));
+      res.on('end', () =>
+        resolve({
+          status: res.statusCode ?? 0,
+          contentType: String(res.headers['content-type'] ?? ''),
+          text: Buffer.concat(chunks).toString('utf8'),
+        }),
+      );
+      res.on('error', reject);
+    });
+    req.setTimeout(timeoutMs, () => {
+      const e = new Error(`request timeout after ${timeoutMs}ms: ${method} ${url}`) as Error & { code: string };
+      e.code = 'XB_TIMEOUT';
+      req.destroy(e);
+    });
+    req.on('error', reject);
+    if (body != null) req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * Retry transient network errors (ECONNRESET / EPIPE / connection refused…)
+ * with backoff 200ms → 400ms → 800ms, max 3 retries. Timeouts and HTTP error
+ * responses are NOT retried.
+ */
+async function requestWithRetry(
+  url: string,
+  method: HttpMethod,
+  headers: Record<string, string>,
+  body: string | undefined,
+  timeoutMs: number,
+): Promise<RawResponse> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= 3; attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, 200 * 2 ** (attempt - 1)));
     try {
-      return await fetch(url, init);
+      return await requestOnce(url, method, headers, body, timeoutMs);
     } catch (err) {
       lastErr = err;
-      if (!(err instanceof TypeError)) throw err; // timeout/abort etc. — don't retry
+      if ((err as { code?: string }).code === 'XB_TIMEOUT') throw err;
     }
   }
   throw lastErr;
@@ -82,7 +136,7 @@ async function doFetch(
   method: HttpMethod,
   token: string,
   opts: ApiCallOptions,
-): Promise<{ resp: Response; parsed: unknown }> {
+): Promise<{ status: number; ok: boolean; parsed: unknown }> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
     Authorization: `Bearer ${token}`,
@@ -97,15 +151,11 @@ async function doFetch(
       if (!headers['Content-Type']) headers['Content-Type'] = 'application/json';
     }
   }
-  const resp = await fetchWithRetry(url, {
-    method,
-    headers,
-    body,
-    signal: AbortSignal.timeout(opts.timeoutMs ?? 30_000),
-  });
-  const ct = resp.headers.get('content-type') || '';
-  const parsed: unknown = ct.includes('application/json') ? await resp.json() : await resp.text();
-  return { resp, parsed };
+  const raw = await requestWithRetry(url, method, headers, body, opts.timeoutMs ?? 30_000);
+  const parsed: unknown = raw.contentType.includes('application/json') && raw.text
+    ? JSON.parse(raw.text)
+    : raw.text;
+  return { status: raw.status, ok: raw.status >= 200 && raw.status < 300, parsed };
 }
 
 /**
@@ -119,19 +169,19 @@ export async function xbApiFetch(
 ): Promise<ApiResult> {
   const url = buildUrl(config.apiBase, path, opts.query);
   let token = await ensureAccessToken(config);
-  let { resp, parsed } = await doFetch(url, method, token, opts);
+  let result = await doFetch(url, method, token, opts);
 
-  if (resp.status === 401) {
+  if (result.status === 401) {
     const cached = await readToken();
     if (cached?.refresh_token) {
       const refreshed = await refreshToken(config, cached.refresh_token);
       const saved = await writeToken(refreshed);
       token = saved.access_token;
-      ({ resp, parsed } = await doFetch(url, method, token, opts));
+      result = await doFetch(url, method, token, opts);
     }
   }
 
-  return { status: resp.status, ok: resp.ok, data: parsed };
+  return { status: result.status, ok: result.ok, data: result.parsed };
 }
 
 export async function getCurrentToken(): Promise<StoredToken | null> {
