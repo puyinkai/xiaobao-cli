@@ -57,6 +57,26 @@ function buildUrl(apiBase: string, path: string, query?: Record<string, string>)
   return url.toString();
 }
 
+
+/**
+ * fetch with retry on transient network errors (undici "TypeError: fetch
+ * failed" — connection reset / unreachable). HTTP error responses and
+ * timeouts are NOT retried; backoff 200ms → 400ms → 800ms, max 3 retries.
+ */
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 200 * 2 ** (attempt - 1)));
+    try {
+      return await fetch(url, init);
+    } catch (err) {
+      lastErr = err;
+      if (!(err instanceof TypeError)) throw err; // timeout/abort etc. — don't retry
+    }
+  }
+  throw lastErr;
+}
+
 async function doFetch(
   url: string,
   method: HttpMethod,
@@ -77,7 +97,7 @@ async function doFetch(
       if (!headers['Content-Type']) headers['Content-Type'] = 'application/json';
     }
   }
-  const resp = await fetch(url, {
+  const resp = await fetchWithRetry(url, {
     method,
     headers,
     body,

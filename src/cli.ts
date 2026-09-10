@@ -7,10 +7,16 @@
  * through ai-open → wang-ai-mcp. See README for the full command map.
  */
 
+import { setDefaultResultOrder } from 'node:dns';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineCommand, runMain } from 'citty';
+
+// Prefer IPv4: Node>=17 resolves DNS in verbatim order, so a host with AAAA
+// records on a half-working IPv6 network yields intermittent "fetch failed"
+// (curl falls back via Happy Eyeballs; undici doesn't). One line fixes it.
+setDefaultResultOrder('ipv4first');
 
 // Read package.json at runtime so version stays in sync with the single source
 // of truth (package.json), no manual dual-bump on each release.
