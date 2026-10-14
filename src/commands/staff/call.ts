@@ -1,7 +1,19 @@
 import { defineCommand } from 'citty';
-import { McpClient, parseToolPayload, toolResultError } from '../../core/mcp-client';
+import { xbApiFetch } from '../../core/api-client';
 import { resolveConfig } from '../../core/config';
+import { requireActiveProject } from '../../core/project-store';
+import { tenantProjectHeaders } from '../../output/headers';
 import { writeError, writeResult } from '../../output/format';
+
+const STAFF_TOOLS_PATH = '/mcp/wangai-cli';
+
+type Tool = { name: string; description?: string; inputSchema?: unknown };
+type JsonRpcResponse<T> = {
+  result?: T;
+  error?: { code?: number; message?: string; data?: unknown };
+};
+type ToolsListResult = { tools?: Tool[] };
+type ToolResult = { content?: Array<{ type?: string; text?: string; data?: unknown }>; isError?: boolean };
 
 function parseVariables(raw: string | undefined): Record<string, unknown> {
   if (!raw) return {};
@@ -15,6 +27,24 @@ function parseVariables(raw: string | undefined): Record<string, unknown> {
     throw Object.assign(new Error('--variables 必须是 JSON object'), { code: 'INVALID_VARIABLES' });
   }
   return parsed as Record<string, unknown>;
+}
+
+function parseToolPayload(result: ToolResult): unknown {
+  const text = result.content?.find((block) => block.type === 'text' && typeof block.text === 'string')?.text;
+  if (text == null) return result.content ?? result;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function throwRpcError(payload: JsonRpcResponse<unknown>, fallback: string): void {
+  if (!payload.error) return;
+  throw Object.assign(new Error(payload.error.message ?? fallback), {
+    code: `JSONRPC_${payload.error.code ?? 'ERROR'}`,
+    details: payload.error.data,
+  });
 }
 
 export default defineCommand({
@@ -33,17 +63,68 @@ export default defineCommand({
         apiBase: args['api-base'],
         authBase: args['auth-base'],
       });
-      const client = new McpClient(config);
-      await client.initialize();
-      const listed = await client.listTools();
-      if (!args.tool.startsWith('staff-') || !listed.tools?.some((tool) => tool.name === args.tool)) {
-        throw Object.assign(new Error(`员工工具未在当前服务开放：${args.tool}`), {
-          code: 'MCP_TOOL_NOT_FOUND',
+      const active = await requireActiveProject();
+      const headers = tenantProjectHeaders(active);
+
+      const listResponse = await xbApiFetch(config, 'POST', STAFF_TOOLS_PATH, {
+        headers,
+        body: {
+          jsonrpc: '2.0',
+          id: 'xiaobao-cli-staff-tools-list',
+          method: 'tools/list',
+          params: {},
+        },
+        timeoutMs: 60_000,
+      });
+      if (!listResponse.ok) {
+        throw Object.assign(new Error(`员工工具列表请求失败（HTTP ${listResponse.status}）`), {
+          code: 'API_ERROR',
+          status: listResponse.status,
+          details: listResponse.data,
         });
       }
-      const result = await client.callTool(args.tool, variables);
-      const error = toolResultError(result);
-      if (error) throw error;
+      const listPayload = listResponse.data as JsonRpcResponse<ToolsListResult>;
+      throwRpcError(listPayload, '员工工具列表获取失败');
+      if (!args.tool.startsWith('staff-') || !listPayload.result?.tools?.some((tool) => tool.name === args.tool)) {
+        throw Object.assign(new Error(`员工工具未在当前服务开放：${args.tool}`), {
+          code: 'STAFF_TOOL_NOT_FOUND',
+        });
+      }
+
+      const response = await xbApiFetch(config, 'POST', STAFF_TOOLS_PATH, {
+        headers,
+        body: {
+          jsonrpc: '2.0',
+          id: 'xiaobao-cli-staff-call',
+          method: 'tools/call',
+          params: {
+            name: args.tool,
+            arguments: { variables },
+          },
+        },
+        timeoutMs: 60_000,
+      });
+      if (!response.ok) {
+        throw Object.assign(new Error(`员工工具调用失败（HTTP ${response.status}）`), {
+          code: 'API_ERROR',
+          status: response.status,
+          details: response.data,
+        });
+      }
+      const payload = response.data as JsonRpcResponse<ToolResult>;
+      throwRpcError(payload, '员工工具调用失败');
+      const result = payload.result;
+      if (!result) {
+        throw Object.assign(new Error('员工工具响应缺少 result'), { code: 'INVALID_API_RESPONSE' });
+      }
+      if (result.isError) {
+        const toolError = parseToolPayload(result);
+        const message =
+          toolError && typeof toolError === 'object' && 'message' in toolError
+            ? String((toolError as { message?: unknown }).message ?? '员工工具调用失败')
+            : '员工工具调用失败';
+        throw Object.assign(new Error(message), { code: 'STAFF_TOOL_ERROR', details: toolError });
+      }
       writeResult(parseToolPayload(result), args.format);
     } catch (err) {
       writeError(err, args.format);
