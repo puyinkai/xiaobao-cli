@@ -34,6 +34,7 @@ const main = defineCommand({
     resistance: () => import('./commands/resistance/index').then((m) => m.default),
     qa: () => import('./commands/qa').then((m) => m.default),
     api: () => import('./commands/api').then((m) => m.default),
+    staff: () => import('./commands/staff/index').then((m) => m.default),
   },
 });
 
