@@ -1,7 +1,7 @@
 # @puyinkai/xiaobao-cli
 
 旺小宝 CLI —— [openclaw-xiaobao](https://github.com/puyinkai/openclaw-xiaobao)
-plugin 的 host-agnostic 等价物。14 个能力 1:1 映射为 14 个 CLI 子命令，**人类
+plugin 的 host-agnostic 等价物。16 个能力映射为 16 个 CLI 子命令，**人类
 直接敲也好用，AI agent（Claude Code / Codex / Cursor / OpenClaw / 任何能 shell
 out 的 host）通过 stdout JSON 消费**。
 
@@ -27,27 +27,54 @@ xiaobao-cli project use --tenant-id 1234 --tenant-name 示例租户 \
 xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" --size 5
 ```
 
+员工工具（登录 + 激活项目后即可用，无需其他配置）：
+
+```bash
+xiaobao-cli staff list                                  # 看开放了哪些员工工具
+xiaobao-cli staff call staff-receptions \
+  --variables '{"staff_receptions_page_num":1,"staff_receptions_page_size":10}'  # 我的接待记录
+xiaobao-cli staff call staff-employee-comparison \
+  --variables '{"staff_comparison_page_num":1,"staff_comparison_page_size":10}' \
+  --format toon                                         # 员工对比，TOON 输出省 token
+```
+
+> 员工对象不传时按当前登录人自查；`staff_*_*` 系列变量是各工具的业务过滤条件，
+> 具体字段见 `staff list` 返回的 inputSchema。
+
 > openclaw-xiaobao 老用户：CLI 默认从 `~/.openclaw/state/wangxiaobao/` fallback
 > 读 token + active-project，**零迁移开箱即用**。新写操作落到 `~/.xiaobao/`。
 
-## 14 个能力
+## 16 个能力
 
-| 命令 | 对应 openclaw-xiaobao tool |
+| 命令                                                 | 对应 openclaw-xiaobao tool           |
+| -------------------------------------------------- | ---------------------------------- |
+| `auth login [--force]`                             | `xiaobao_authorize`                |
+| `auth whoami`                                      | `xiaobao_whoami`                   |
+| `auth logout`                                      | `xiaobao_logout`                   |
+| `project list [--keyword <kw>]`                    | `xiaobao_list_projects`            |
+| `project use --tenant-id ... --project-id ...`     | `xiaobao_switch_project`           |
+| `consultant list`                                  | `xiaobao_list_consultants`         |
+| `audio list --from --to [--user-id] ...`           | `xiaobao_list_audio`               |
+| `audio text <audio-id>`                            | `xiaobao_get_audio_text`           |
+| `customer list [--customer-name] [--portrait] ...` | `xiaobao_list_customers`           |
+| `visit list [--customer-id] [--from] [--to]`       | `xiaobao_list_visits`              |
+| `focus list [--visit-ids] [--category] ...`        | `xiaobao_list_customer_focus`      |
+| `resistance list [...]`                            | `xiaobao_list_customer_resistance` |
+| `qa <prompt> [--thread-id <id>]`                   | `xiaobao_quick_qa`                 |
+| `api <METHOD> <path>`                              | `xiaobao_api`                      |
+
+`staff` 两个命令走 MCP，按 agent-tool 的 10 个员工工具映射：
+
+| 命令 | 说明 |
 | --- | --- |
-| `auth login [--force]` | `xiaobao_authorize` |
-| `auth whoami` | `xiaobao_whoami` |
-| `auth logout` | `xiaobao_logout` |
-| `project list [--keyword <kw>]` | `xiaobao_list_projects` |
-| `project use --tenant-id ... --project-id ...` | `xiaobao_switch_project` |
-| `consultant list` | `xiaobao_list_consultants` |
-| `audio list --from --to [--user-id] ...` | `xiaobao_list_audio` |
-| `audio text <audio-id>` | `xiaobao_get_audio_text` |
-| `customer list [--customer-name] [--portrait] ...` | `xiaobao_list_customers` |
-| `visit list [--customer-id] [--from] [--to]` | `xiaobao_list_visits` |
-| `focus list [--visit-ids] [--category] ...` | `xiaobao_list_customer_focus` |
-| `resistance list [...]` | `xiaobao_list_customer_resistance` |
-| `qa <prompt> [--thread-id <id>]` | `xiaobao_quick_qa` |
-| `api <METHOD> <path>` | `xiaobao_api` |
+| `staff list` | 列出 BFF 开放的员工工具目录（`json` 含各工具 inputSchema） |
+| `staff call <tool>` | 调用某个员工工具；业务参数全部经 `--variables` 传递（示例见员工工具使用说明） |
+
+员工对象不传时按当前登录人**自查**（`staff_user_id` 由登录身份解析）；指定他人查看时，
+授权范围由 BFF 按当前管理关系计算，越权目标会被拒绝。
+
+10 个工具的完整参数、分页/时间变量、错误码约定与逐条示例，见
+**[员工工具使用说明](docs/staff-tools.md)**。
 
 ## 通用 flags
 
