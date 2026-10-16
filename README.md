@@ -100,8 +100,9 @@ xiaobao-cli staff call staff-employee-comparison \
 
 ## skill 配套
 
-`skills/` 目录下 8 个 SKILL.md 跟 cli 同包发布，跟 openclaw-xiaobao 那边镜像，
-只是调用从 plugin tool invoke 改为 shell out `xiaobao-cli ...`。
+`skills/` 目录下的各 SKILL.md（面向 agent 的能力说明，随包发布）跟 openclaw-xiaobao
+那边镜像，只是调用从 plugin tool invoke 改为 shell out `xiaobao-cli ...`；具体清单以
+`skills/` 目录为准。
 
 ## License
 
