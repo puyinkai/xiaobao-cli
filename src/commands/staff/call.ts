@@ -1,20 +1,11 @@
 import { defineCommand } from 'citty';
-import { getCurrentToken, xbApiFetch } from '../../core/api-client';
+import { getCurrentToken } from '../../core/api-client';
 import { resolveConfig } from '../../core/config';
 import { requireActiveProject } from '../../core/project-store';
 import { decodeJwtPayload } from '../../core/token-store';
 import { mcpProjectHeaders } from '../../output/headers';
 import { writeError, writeResult } from '../../output/format';
-
-const STAFF_TOOLS_PATH = '/mcp/wangai-cli';
-
-type Tool = { name: string; description?: string; inputSchema?: unknown };
-type JsonRpcResponse<T> = {
-  result?: T;
-  error?: { code?: number; message?: string; data?: unknown };
-};
-type ToolsListResult = { tools?: Tool[] };
-type ToolResult = { content?: Array<{ type?: string; text?: string; data?: unknown }>; isError?: boolean };
+import { fetchMcpTools, mcpRpc, type ToolResult } from '../../core/mcp-client';
 
 function parseVariables(raw: string | undefined): Record<string, unknown> {
   if (!raw) return {};
@@ -38,14 +29,6 @@ function parseToolPayload(result: ToolResult): unknown {
   } catch {
     return text;
   }
-}
-
-function throwRpcError(payload: JsonRpcResponse<unknown>, fallback: string): void {
-  if (!payload.error) return;
-  throw Object.assign(new Error(payload.error.message ?? fallback), {
-    code: `JSONRPC_${payload.error.code ?? 'ERROR'}`,
-    details: payload.error.data,
-  });
 }
 
 export default defineCommand({
@@ -76,34 +59,19 @@ export default defineCommand({
         end: args['time-end'],
       });
 
-      const listResponse = await xbApiFetch(config, 'POST', STAFF_TOOLS_PATH, {
-        headers,
-        body: {
-          jsonrpc: '2.0',
-          id: 'xiaobao-cli-staff-tools-list',
-          method: 'tools/list',
-          params: {},
-        },
-        timeoutMs: 60_000,
-      });
-      if (!listResponse.ok) {
-        throw Object.assign(new Error(`员工工具列表请求失败（HTTP ${listResponse.status}）`), {
-          code: 'API_ERROR',
-          status: listResponse.status,
-          details: listResponse.data,
-        });
-      }
-      const listPayload = listResponse.data as JsonRpcResponse<ToolsListResult>;
-      throwRpcError(listPayload, '员工工具列表获取失败');
-      if (!args.tool.startsWith('staff-') || !listPayload.result?.tools?.some((tool) => tool.name === args.tool)) {
+      // Pre-check against the live tool list so a tool that is not open here
+      // fails fast as STAFF_TOOL_NOT_FOUND instead of a downstream error.
+      const tools = await fetchMcpTools(config, headers);
+      if (!args.tool.startsWith('staff-') || !tools.some((tool) => tool.name === args.tool)) {
         throw Object.assign(new Error(`员工工具未在当前服务开放：${args.tool}`), {
           code: 'STAFF_TOOL_NOT_FOUND',
         });
       }
 
-      const response = await xbApiFetch(config, 'POST', STAFF_TOOLS_PATH, {
+      const result = await mcpRpc<ToolResult>(
+        config,
         headers,
-        body: {
+        {
           jsonrpc: '2.0',
           id: 'xiaobao-cli-staff-call',
           method: 'tools/call',
@@ -112,21 +80,9 @@ export default defineCommand({
             arguments: { variables },
           },
         },
-        timeoutMs: 60_000,
-      });
-      if (!response.ok) {
-        throw Object.assign(new Error(`员工工具调用失败（HTTP ${response.status}）`), {
-          code: 'API_ERROR',
-          status: response.status,
-          details: response.data,
-        });
-      }
-      const payload = response.data as JsonRpcResponse<ToolResult>;
-      throwRpcError(payload, '员工工具调用失败');
-      const result = payload.result;
-      if (!result) {
-        throw Object.assign(new Error('员工工具响应缺少 result'), { code: 'INVALID_API_RESPONSE' });
-      }
+        60_000,
+      );
+
       if (result.isError) {
         const toolError = parseToolPayload(result);
         const message =
