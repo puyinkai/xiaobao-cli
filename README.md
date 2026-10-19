@@ -49,6 +49,25 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 | `qa <prompt> [--thread-id <id>]` | `xiaobao_quick_qa` |
 | `api <METHOD> <path>` | `xiaobao_api` |
 
+### 员工 MCP 工具
+
+```bash
+xiaobao-cli staff list
+xiaobao-cli staff call staff-permission-scope
+xiaobao-cli staff call staff-receptions --variables '{"staff_receptions_page_num":1,"staff_receptions_page_size":10}'
+xiaobao-cli staff call staff-employee-comparison --time-start "2026-10-01 00:00:00" --time-end "2026-10-16 00:00:00"
+```
+
+`staff` 命令会从当前激活项目和 MCP access token 自动组装 `X-MCP-Tenant-Id`、
+`X-MCP-Project-Id`、`X-MCP-User-Id`，并使用 MCP 网关要求的 JSON/Streamable HTTP
+协商头。测试环境可通过环境变量切换：
+
+```powershell
+$env:XIAOBAO_API_BASE = "https://mcp.test.wangxiaobao.com"
+$env:XIAOBAO_AUTH_BASE = "https://admin.test.wangxiaobao.com"
+xiaobao-cli staff list
+```
+
 ## 通用 flags
 
 - `--format json|toon|table` —— 默认 `json`（agent 友好）；`table` 人类友好；`toon` 给 LLM 上下文用

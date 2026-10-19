@@ -1,8 +1,9 @@
 import { defineCommand } from 'citty';
-import { xbApiFetch } from '../../core/api-client';
+import { getCurrentToken, xbApiFetch } from '../../core/api-client';
 import { resolveConfig } from '../../core/config';
 import { requireActiveProject } from '../../core/project-store';
-import { tenantProjectHeaders } from '../../output/headers';
+import { decodeJwtPayload } from '../../core/token-store';
+import { mcpProjectHeaders } from '../../output/headers';
 import { writeError, writeResult } from '../../output/format';
 
 const STAFF_TOOLS_PATH = '/mcp/wangai-cli';
@@ -29,8 +30,12 @@ export default defineCommand({
         authBase: args['auth-base'],
       });
       const active = await requireActiveProject();
+      const token = await getCurrentToken();
+      const userId = typeof decodeJwtPayload(token?.access_token)?.sub === 'string'
+        ? String(decodeJwtPayload(token?.access_token)?.sub)
+        : undefined;
       const response = await xbApiFetch(config, 'POST', STAFF_TOOLS_PATH, {
-        headers: tenantProjectHeaders(active),
+        headers: mcpProjectHeaders(active, userId),
         body: {
           jsonrpc: '2.0',
           id: 'xiaobao-cli-staff-list',
