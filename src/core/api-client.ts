@@ -64,7 +64,10 @@ async function doFetch(
   opts: ApiCallOptions,
 ): Promise<{ resp: Response; parsed: unknown }> {
   const headers: Record<string, string> = {
-    Accept: 'application/json',
+    // The MCP gateway uses Streamable HTTP content negotiation.  It currently
+    // returns JSON for these requests, while accepting the event-stream media
+    // type as well. This client parses the current JSON response format.
+    Accept: 'application/json, text/event-stream',
     Authorization: `Bearer ${token}`,
     ...(opts.headers ?? {}),
   };
