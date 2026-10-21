@@ -63,20 +63,20 @@ xiaobao-cli staff call staff-employee-comparison \
 | `qa <prompt> [--thread-id <id>]`                   | `xiaobao_quick_qa`                 |
 | `api <METHOD> <path>`                              | `xiaobao_api`                      |
 
-`staff` 两个命令走 MCP，目录包含员工查询与当前项目权限查询工具：
+`staff` 两个命令走 ai-open REST，目录包含员工查询与当前项目权限查询工具：
 
 | 命令 | 说明 |
 | --- | --- |
-| `staff list` | 列出 BFF 开放的员工工具目录（`json` 含各工具 inputSchema） |
+| `staff list` | 列出服务端开放的员工工具目录（`json` 含各工具 inputSchema） |
 | `staff call <tool>` | 调用某个员工工具；业务参数全部经 `--variables` 传递（示例见员工工具使用说明） |
 
 员工对象省略时使用当前授权范围（以 `staff-permission-scope` 的 `active_scope` 为准）；指定员工查看时，
-授权范围由 BFF 按当前管理关系计算，越权目标会被拒绝。
+授权范围由服务端按当前管理关系计算，越权目标会被拒绝。
 
 各工具的完整参数、分页/时间变量、错误码约定与逐条示例，见
 **[员工工具使用说明](docs/staff-tools.md)**。
 
-### 员工 MCP 工具
+### 员工工具接口
 
 ```bash
 xiaobao-cli staff list
@@ -85,15 +85,15 @@ xiaobao-cli staff call staff-receptions --variables '{"staff_receptions_page_num
 xiaobao-cli staff call staff-recent-reception-summary --time-start "2026-10-01 00:00:00" --time-end "2026-10-16 00:00:00"
 ```
 
-`staff` 命令会从当前激活项目和 MCP access token 自动组装 `X-MCP-Tenant-Id`、
-`X-MCP-Project-Id`、`X-MCP-User-Id`，并使用 MCP 网关要求的 JSON/Streamable HTTP
-协商头。测试环境可通过环境变量切换：
+`staff` 与其他业务命令共用 ai-open 地址和登录 token：
 
-```powershell
-$env:XIAOBAO_API_BASE = "https://mcp.test.wangxiaobao.com"
-$env:XIAOBAO_AUTH_BASE = "https://admin.test.wangxiaobao.com"
-xiaobao-cli staff list
-```
+- 目录：`GET /ai-open/staff/tools`
+- 调用：`POST /ai-open/staff/tools/{toolName}/call`，Body 为 `{variables,timeRange?}`
+- CLI 发送 Bearer token 与标准 `X-Tenant-*` / `X-Project-*` 头；用户身份由服务端认证上下文确定
+
+默认 `XIAOBAO_API_BASE=https://open-ai.wangxiaobao.com`。联调时将 `--api-base` 或该环境变量
+设置为目标环境的开放 API 网关，并配套设置 `--auth-base`；员工命令不再使用 MCP 专用域名。
+开放接口、application 员工能力和 agent-tool 连接须先部署配置完成。
 
 ## 通用 flags
 

@@ -27,8 +27,8 @@ export function tenantProjectHeaders(active: ActiveProject): Record<string, stri
 
 /**
  * Context headers expected by the MCP BFF when a request reaches it through
- * the MCP gateway.  The older X-Tenant-* headers above are still used by the
- * REST data endpoints; staff tools use this separate contract.
+ * the MCP gateway. REST commands, including staff tools, use the
+ * standard X-Tenant-* / X-Project-* headers above.
  */
 export function mcpProjectHeaders(
   active: ActiveProject,

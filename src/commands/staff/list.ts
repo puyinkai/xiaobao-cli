@@ -1,11 +1,9 @@
 import { defineCommand } from 'citty';
-import { getCurrentToken } from '../../core/api-client';
 import { resolveConfig } from '../../core/config';
 import { requireActiveProject } from '../../core/project-store';
-import { decodeJwtPayload } from '../../core/token-store';
-import { mcpProjectHeaders } from '../../output/headers';
+import { tenantProjectHeaders } from '../../output/headers';
 import { writeError, writeResult } from '../../output/format';
-import { fetchMcpTools } from '../../core/mcp-client';
+import { fetchStaffTools } from '../../core/staff-client';
 
 export default defineCommand({
   meta: { name: 'list', description: '查看当前开放的员工工具' },
@@ -21,12 +19,7 @@ export default defineCommand({
         authBase: args['auth-base'],
       });
       const active = await requireActiveProject();
-      const token = await getCurrentToken();
-      const userId = typeof decodeJwtPayload(token?.access_token)?.sub === 'string'
-        ? String(decodeJwtPayload(token?.access_token)?.sub)
-        : undefined;
-      // fetchMcpTools follows `nextCursor`, so the list is the union of all pages.
-      const tools = await fetchMcpTools(config, mcpProjectHeaders(active, userId));
+      const tools = await fetchStaffTools(config, tenantProjectHeaders(active));
       writeResult(
         { tools: tools.filter((tool) => tool.name.startsWith('staff-')) },
         args.format,
