@@ -23,6 +23,7 @@
   "packageManager": "pnpm@10.32.1",
   "scripts": {
     "build": "tsdown",
+    "test": "pnpm build && node --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "dev": "node --import tsx src/cli.ts"
   },

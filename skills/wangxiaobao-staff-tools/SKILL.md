@@ -1,7 +1,7 @@
 ---
 name: wangxiaobao-staff-tools
 version: 0.1.0
-description: "旺小宝员工工具（staff-*，以实时目录为准）统一入口：`xiaobao-cli staff list` 看目录、`xiaobao-cli staff call <tool> --variables '{...}'` 调用。CLI 根据当前项目与 token 组装 MCP 身份头，网关与 BFF 校验身份及授权范围；不得在业务变量中伪造身份或权限；业务字段全部放进 `--variables` 这一个 JSON object。各工具的完整变量与可复制示例都写在本文件里（参数说明不依赖外部文档）。覆盖能力：员工接待记录 / 员工旅程事件流 / 员工能力画像 / 近期接待总结 / 近期质检 / 成交能力 / 员工评价 / 盘销语音会话 / 员工名下的客户画像 / 员工对比。何时用：用户问某员工的接待或接访记录、员工旅程、员工能力与成交、员工近期表现或质检、员工评价、盘销（语音会话）记录、两名以上员工对比，以及「我的…」类自指查询（不传员工 id 时使用当前授权范围）。注：客户画像 MUST 先调 staff-journey 拿 customer_id；团队范围 MUST 先经 staff-permission-scope 查询授权员工；要客户名单/来访列表/录音元数据请用 `xiaobao-cli customer list` / `visit list` / `audio list`，不要用员工工具。"
+description: "旺小宝员工工具（staff-*，以实时目录为准）统一入口：`xiaobao-cli staff list` 看目录、`xiaobao-cli staff call <tool> --variables '{...}'` 调用。CLI 使用标准项目头与 Bearer token 调用 ai-open REST，服务端校验身份及授权范围；不得在业务变量中伪造身份或权限；业务字段全部放进 `--variables` 这一个 JSON object。各工具的完整变量与可复制示例都写在本文件里（参数说明不依赖外部文档）。覆盖能力：员工接待记录 / 员工旅程事件流 / 员工能力画像 / 近期接待总结 / 近期质检 / 成交能力 / 员工评价 / 盘销语音会话 / 员工名下的客户画像 / 员工对比。何时用：用户问某员工的接待或接访记录、员工旅程、员工能力与成交、员工近期表现或质检、员工评价、盘销（语音会话）记录、两名以上员工对比，以及「我的…」类自指查询（不传员工 id 时使用当前授权范围）。注：客户画像 MUST 先调 staff-journey 拿 customer_id；团队范围 MUST 先经 staff-permission-scope 查询授权员工；要客户名单/来访列表/录音元数据请用 `xiaobao-cli customer list` / `visit list` / `audio list`，不要用员工工具。"
 metadata:
   requires:
     bins: ["xiaobao-cli"]
@@ -29,7 +29,7 @@ xiaobao-cli staff call <tool> --variables '{"键":"值"}'    # 调用某个员�
 
 - **必须有有效 token**：先 `xiaobao-cli auth whoami`；未登录按共享 skill 的 split-flow 登录
 - **必须有激活项目**：缺失返回 `NO_ACTIVE_PROJECT`
-- **身份与授权范围不由调用方填**：CLI 根据当前项目与 token 组装 MCP 租户/项目/用户头；网关验证 token 身份，BFF 再按当前管理关系**算出你能看哪些员工**。往 `--variables` 里塞 `tenant_id` / `viewer_id` / `active_scope` / `max_scope` 等会被服务端**静默剥离**——不报错，也不生效
+- **身份与授权范围不由调用方填**：CLI 发送标准租户/项目头与 Bearer token；ai-open 从认证上下文确定用户，服务端再按当前管理关系**算出你能看哪些员工**。往 `--variables` 里塞 `tenant_id` / `viewer_id` / `active_scope` / `max_scope` 等会被服务端**静默剥离**——不报错，也不生效
 - **越权会被拦**：`staff_user_id` 不在授权范围内时返回 `isError=true`、`error=STAFF_TOOL_ERROR`、`details.code=EMPLOYEE_SCOPE_VIOLATION`。**不要用同一个 id 重试**，先回去做员工解析
 - 变量名支持下划线或驼峰（`staff_receptions_page_num` ≡ `staffReceptionsPageNum`）；分页变量有通用兜底（缺具体前缀时 `page_num` / `page_size` 也生效），但**优先用下面各工具的具名变量**
 - **只读**：不写文件、不出报告
@@ -59,7 +59,7 @@ xiaobao-cli staff call staff-permission-scope
 `scope.employee_id`，作为 `staff_user_id`；多个员工用 `staff_user_ids`。所有 ID 原样保留为字符串。
 
 统计时间通过 `--time-start` / `--time-end` 指定（北京时间 `yyyy-MM-dd HH:mm:ss`），
-CLI 自动发送 `X-MCP-Time-Range`。不要用周期枚举代替精确起止时间。
+CLI 自动发送请求 Body 的 `timeRange`。不要用周期枚举代替精确起止时间。
 
 ### 1. `staff-receptions` — 员工接待记录（明细）
 

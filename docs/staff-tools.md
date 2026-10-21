@@ -1,25 +1,27 @@
 # 员工工具（staff）使用说明
 
-`staff` 走 MCP（`POST /mcp/wangai-cli`），包含员工查询工具及 BFF 的当前项目权限查询工具，实际目录以 `staff list` 为准。
-登录并激活项目后即可使用，无需其他配置。
+`staff` 走 ai-open REST（`GET /ai-open/staff/tools`、`POST /ai-open/staff/tools/{toolName}/call`），包含员工查询及当前项目权限查询工具，实际目录以 `staff list` 为准。
+登录并激活项目后即可使用；服务端须已部署员工 REST 能力。命令与输出保持兼容，成功时仍输出原业务 payload（含原 code/msg/data），不额外输出 REST 的 isError/payload 包装。
 
 | 命令 | 说明 |
 | --- | --- |
-| `staff list` | 列出 BFF 开放的员工工具目录（`json` 含各工具 inputSchema） |
+| `staff list` | 列出服务端开放的员工工具目录（`json` 含各工具 inputSchema） |
 | `staff call <tool>` | 调用某个员工工具；业务参数全部经 `--variables` 传递（见下方各工具示例） |
 
 ## 通用约定
 
 - 先调用 `staff-permission-scope` 查看当前项目的授权范围；从 `available_scopes` 按 `label` 选择
   `scope.employee_id`，原样作为字符串传给 `staff_user_id`；多个员工用 `staff_user_ids`
-- 省略员工时使用当前授权范围（`active_scope`）；授权范围由 BFF 按当前管理关系计算，越权目标会被拒绝
-- 统一统计时间使用 `--time-start` / `--time-end`（北京时间 `yyyy-MM-dd HH:mm:ss`），由 CLI 发送 `X-MCP-Time-Range`；不要用周期枚举代替精确起止时间
+- 省略员工时使用当前授权范围（`active_scope`）；授权范围由服务端按当前管理关系计算，越权目标会被拒绝
+- 统一统计时间使用 `--time-start` / `--time-end`（北京时间 `yyyy-MM-dd HH:mm:ss`），由 CLI 发送请求 Body 的 `timeRange`；不要用周期枚举代替精确起止时间
 - 变量名支持下划线与驼峰两种写法（`staff_receptions_page_num` ≡ `staffReceptionsPageNum`）
 - 业务变量字段以 `staff list` 返回的 inputSchema 为准
 - 错误码：变量非法 → `INVALID_VARIABLES`；
   未知/不开放工具 → `STAFF_TOOL_NOT_FOUND`；
   越权目标 → `STAFF_TOOL_ERROR`，`details.code` 为 `EMPLOYEE_SCOPE_VIOLATION`；
-  下游业务失败 → `STAFF_TOOL_ERROR`（均按通用退出码约定返回非 0）
+  工具执行失败 → `STAFF_TOOL_ERROR`，`details` 保留原工具错误；
+  HTTP/外层 Result 失败 → `API_ERROR`；白名单提示 → `ACCESS_DENIED`；响应结构错误 → `INVALID_API_RESPONSE`
+  （均按通用退出码约定返回非 0）
 - `--format json|toon` 对所有 `staff call` 生效，下方示例统一省略
 
 ## 各工具用法
