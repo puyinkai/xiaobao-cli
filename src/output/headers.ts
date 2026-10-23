@@ -24,3 +24,27 @@ export function tenantProjectHeaders(active: ActiveProject): Record<string, stri
     'X-Project-Name': encodeURIComponent(active.projectName),
   };
 }
+
+/**
+ * Context headers expected by the MCP BFF when a request reaches it through
+ * the MCP gateway. REST commands, including staff tools, use the
+ * standard X-Tenant-* / X-Project-* headers above.
+ */
+export function mcpProjectHeaders(
+  active: ActiveProject,
+  userId?: string,
+  timeRange?: { start?: string; end?: string },
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    'X-MCP-Tenant-Id': active.tenantId,
+    'X-MCP-Project-Id': active.projectId,
+    ...(userId ? { 'X-MCP-User-Id': userId } : {}),
+  };
+  if (timeRange?.start || timeRange?.end) {
+    headers['X-MCP-Time-Range'] = JSON.stringify({
+      ...(timeRange.start ? { start: timeRange.start } : {}),
+      ...(timeRange.end ? { end: timeRange.end } : {}),
+    });
+  }
+  return headers;
+}

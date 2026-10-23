@@ -49,6 +49,7 @@ const main = defineCommand({
     date: () => import('./commands/date/index').then((m) => m.default),
     admin: () => import('./commands/admin/index').then((m) => m.default),
     api: () => import('./commands/api').then((m) => m.default),
+    staff: () => import('./commands/staff/index').then((m) => m.default),
   },
 });
 

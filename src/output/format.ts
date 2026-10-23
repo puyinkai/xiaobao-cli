@@ -59,10 +59,17 @@ function serializeError(error: unknown): Record<string, unknown> {
     // it without parsing the message.
     const codeAttr = (error as Error & { code?: string }).code;
     const hint = (error as Error & { hint?: string }).hint;
+    // `status` / `details` carry the HTTP status and the upstream payload
+    // (e.g. a structured employee tool error). Without them an agent sees only
+    // the message string and cannot branch on the server's error code.
+    const status = (error as Error & { status?: number }).status;
+    const details = (error as Error & { details?: unknown }).details;
     return {
       error: codeAttr ?? (error.name !== 'Error' ? error.name : 'Error'),
       message: error.message,
       ...(hint ? { hint } : {}),
+      ...(status != null ? { status } : {}),
+      ...(details != null ? { details } : {}),
     };
   }
   if (error && typeof error === 'object') {

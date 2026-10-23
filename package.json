@@ -1,7 +1,7 @@
 {
   "name": "@puyinkai/xiaobao-cli",
-  "version": "0.6.2",
-  "description": "旺小宝 CLI — host-agnostic 业务数据 / 问数 / 来访总结 / 知识库 能力 (openclaw-xiaobao plugin 的 CLI 等价物)",
+  "version": "0.7.0",
+  "description": "旺小宝 CLI — host-agnostic 业务数据 / 问数 / 来访总结 / 知识库 / 员工工具 能力 (openclaw-xiaobao plugin 的 CLI 等价物)",
   "type": "module",
   "bin": {
     "xiaobao-cli": "./dist/cli.mjs"
@@ -14,6 +14,7 @@
     "skills/**/*.html",
     "skills/**/*.png",
     "skills/**/*.json",
+    "docs/**/*.md",
     "README.md"
   ],
   "engines": {
@@ -22,6 +23,7 @@
   "packageManager": "pnpm@10.32.1",
   "scripts": {
     "build": "tsdown",
+    "test": "pnpm build && node --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "dev": "node --import tsx src/cli.ts",
     "workbuddy:pack": "rm -rf dist-workbuddy && mkdir -p dist-workbuddy/wangxiaobao && cp workbuddy/connector-meta.json workbuddy/cli.json workbuddy/icon.svg dist-workbuddy/wangxiaobao/ && cp -R skills dist-workbuddy/wangxiaobao/skills && cd dist-workbuddy && zip -qr wangxiaobao-connector.zip wangxiaobao && echo dist-workbuddy/wangxiaobao-connector.zip"

@@ -1,7 +1,7 @@
 # @puyinkai/xiaobao-cli
 
 旺小宝 CLI —— [openclaw-xiaobao](https://github.com/puyinkai/openclaw-xiaobao)
-plugin 的 host-agnostic 等价物。业务数据 / 问数 / 来访总结 / 知识库 等能力映射为
+plugin 的 host-agnostic 等价物。业务数据 / 问数 / 来访总结 / 知识库 / 员工工具 等能力映射为
 CLI 子命令，**人类直接敲也好用，AI agent（Claude Code / Codex / Cursor / OpenClaw /
 任何能 shell out 的 host）通过 stdout JSON 消费**。
 
@@ -30,12 +30,45 @@ xiaobao-cli project use --tenant-id 1234 --tenant-name 示例租户 \
 xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" --size 5
 ```
 
+员工工具（登录 + 激活项目后即可用，无需其他配置）：
+
+```bash
+xiaobao-cli staff list                                  # 看开放了哪些员工工具
+xiaobao-cli staff call staff-receptions \
+  --variables '{"staff_receptions_page_num":1,"staff_receptions_page_size":10}'  # 我的接待记录
+xiaobao-cli staff call staff-employee-comparison \
+  --variables '{"staff_user_ids":["<授权员工ID1>","<授权员工ID2>"]}' \
+  --format toon                                         # 员工对比，TOON 输出省 token
+```
+
+> 员工对象不传时使用当前授权范围；`staff_*_*` 系列变量是各工具的业务过滤条件，
+> 具体字段见 `staff list` 返回的 inputSchema。
+
 > openclaw-xiaobao 老用户：CLI 默认从 `~/.openclaw/state/wangxiaobao/` fallback
 > 读 token + active-project，**零迁移开箱即用**。新写操作落到 `~/.xiaobao/`。
 
 ## 能力一览
 
-| 命令 | 对应 openclaw-xiaobao tool |
+| 命令                                                 | 对应 openclaw-xiaobao tool           |
+| -------------------------------------------------- | ---------------------------------- |
+| `auth login [--force]`                             | `xiaobao_authorize`                |
+| `auth whoami`                                      | `xiaobao_whoami`                   |
+| `auth logout`                                      | `xiaobao_logout`                   |
+| `project list [--keyword <kw>]`                    | `xiaobao_list_projects`            |
+| `project use --tenant-id ... --project-id ...`     | `xiaobao_switch_project`           |
+| `consultant list`                                  | `xiaobao_list_consultants`         |
+| `audio list --from --to [--user-id] ...`           | `xiaobao_list_audio`               |
+| `audio text <audio-id>`                            | `xiaobao_get_audio_text`           |
+| `customer list [--customer-name] [--portrait] ...` | `xiaobao_list_customers`           |
+| `visit list [--customer-id] [--from] [--to]`       | `xiaobao_list_visits`              |
+| `focus list [--visit-ids] [--category] ...`        | `xiaobao_list_customer_focus`      |
+| `resistance list [...]`                            | `xiaobao_list_customer_resistance` |
+| `qa <prompt> [--thread-id <id>]`                   | `xiaobao_quick_qa`                 |
+| `api <METHOD> <path>`                              | `xiaobao_api`                      |
+
+`staff` 两个命令走 ai-open REST，目录包含员工查询与当前项目权限查询工具：
+
+| 命令 | 说明 |
 | --- | --- |
 | `auth login [--force]` | `xiaobao_authorize` |
 | `auth whoami` | `xiaobao_whoami` |
@@ -64,7 +97,34 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 | `date now\|today\|range this-week …` | 新增 · 本地日期工具（不走网络） |
 | `admin sales-report --from --to [--by project\|zone]` | 新增 · 公司经营数据 出库/回款（super-admin，独立白名单） |
 | `admin token-usage --from --to [--model] …` | 新增 · LLM token 用量（super-admin，独立白名单） |
+| `staff list` | 新增 · 员工工具目录（`json` 含各工具 inputSchema） |
+| `staff call <tool> [--variables '{json}']` | 新增 · 调用员工工具（参数见 docs/staff-tools.md） |
 | `api <METHOD> <path>` | `xiaobao_api` |
+
+员工对象省略时使用当前授权范围（以 `staff-permission-scope` 的 `active_scope` 为准）；指定员工查看时，
+授权范围由服务端按当前管理关系计算，越权目标会被拒绝。
+
+各工具的完整参数、分页/时间变量、错误码约定与逐条示例，见
+**[员工工具使用说明](docs/staff-tools.md)**。
+
+### 员工工具接口
+
+```bash
+xiaobao-cli staff list
+xiaobao-cli staff call staff-permission-scope
+xiaobao-cli staff call staff-receptions --variables '{"staff_receptions_page_num":1,"staff_receptions_page_size":10}'
+xiaobao-cli staff call staff-recent-reception-summary --time-start "2026-10-01 00:00:00" --time-end "2026-10-16 00:00:00"
+```
+
+`staff` 与其他业务命令共用 ai-open 地址和登录 token：
+
+- 目录：`GET /ai-open/staff/tools`
+- 调用：`POST /ai-open/staff/tools/{toolName}/call`，Body 为 `{variables,timeRange?}`
+- CLI 发送 Bearer token 与标准 `X-Tenant-*` / `X-Project-*` 头；用户身份由服务端认证上下文确定
+
+默认 `XIAOBAO_API_BASE=https://open-ai.wangxiaobao.com`。联调时将 `--api-base` 或该环境变量
+设置为目标环境的开放 API 网关，并配套设置 `--auth-base`；员工命令不再使用 MCP 专用域名。
+开放接口、application 员工能力和 agent-tool 连接须先部署配置完成。
 
 ## WorkBuddy Connector
 
@@ -102,6 +162,7 @@ xiaobao-cli audio list --from "2026-05-01 00:00:00" --to "2026-05-02 00:00:00" -
 `wangxiaobao-visit-summary-query`（来访接待总结）、`wangxiaobao-knowledge-base`（知识库）
 与 `wangxiaobao-quantum-stats`（量子看板 / KPI 统计，含 `references/quantum-metrics.md`）；
 `wangxiaobao-quick-qa` 的问数底层由 fast-responder 切换为 sql-agent。
+员工工具的 agent 说明见 `wangxiaobao-staff-tools`。
 
 ## License
 
